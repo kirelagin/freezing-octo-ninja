@@ -182,7 +182,7 @@ module Dex =
         member this.ReturnType with get () = return_type
         member this.Parameters with get () = parameters
         override this.ToString () =
-            "(" + System.String.Join (", ", Array.map (fun t -> t.ToString ()) this.Parameters) + ") : " + this.ReturnType.ToString ()
+            "(" + (Array.reduce (+) <| Array.map (fun t -> t.ToString () + " ->") this.Parameters)  + this.ReturnType.ToString () + ")"
     and
      [<JavaScript>]
      Class () = class end
