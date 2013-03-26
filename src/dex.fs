@@ -6,6 +6,13 @@ module Dex =
 
     [<Inline "$data[$i]">]
     let get (data : Uint8Array) (i : int) = X<_> // HACK: this is to avoid WebSharper's integer conversion difficulties
+
+    [<Inline "String.fromCharCode.apply(null, $bs)">]
+    let charsToString (bs : int array) : string = X<_> // HACK: `System.Text.Encoding` is not working =(
+
+    [<Inline "$arr.push($x)">]
+    let arrayPush (arr : 'a array) (x : 'a) : unit = X<_>
+
     
     [<JavaScript>]
     type DexFileArray [<JavaScript>] (data : Uint8Array) =
@@ -52,9 +59,33 @@ module Dex =
         member this.GetULeb128 () = Numbers.unsign <| this.GetLeb128 false
         member this.GetSLeb128 () = this.GetLeb128 true
 
+        member this.GetMUTF8String () : string =
+            let out : int array = [| |]
+            let mutable stop = false
+            while not stop do
+                let a = int <| this.GetByte ()
+                if a = 0 then
+                    stop <- true
+                else
+                    if a < 0x80 then
+                        arrayPush out a
+                    else if (a &&& 0xe0) = 0xc0 then
+                        let b = int <| this.GetByte ()
+                        if ((b &&& 0xc0) <> 0x80) then failwith "MUTF-8: Bad second byte"
+                        arrayPush out (((a &&& 0x1f) <<< 6) ||| (b &&& 0x3f))
+                    else if (a &&& 0xf0) = 0xe0 then
+                        let b = int <| this.GetByte ()
+                        let c = int <| this.GetByte ()
+                        if ((b &&& 0xc0) <> 0x80) || ((c &&& 0xc0) <> 0x80) then failwith "MUTF-8: Bad second or third byte"
+                        arrayPush out (((a &&& 0x0f) <<< 12) ||| ((b &&& 0x3f) <<< 6) ||| (c &&& 0x3f))
+                    else
+                        failwith "MUTF-8: Bad byte"
+            charsToString out
+
+
     [<JavaScript>]
     type DexFile [<JavaScript>] private () =
-        member val strings = new ResizeArray<string>()
+        member val strings : string array = [| |]
         member val types = new ResizeArray<string>()
         member val prototypes = new ResizeArray<string>()
         member val fields = new ResizeArray<string>()
@@ -104,5 +135,4 @@ module Dex =
                 let string_data_off = stream.GetUInt32 ()
                 let prev_off = stream.Seek string_data_off
                 let utf16_size = stream.GetULeb128 ()
-                ()
-                //dexf.strings.Add stream.GetMUTF8String ()
+                arrayPush dexf.strings <| stream.GetMUTF8String ()
