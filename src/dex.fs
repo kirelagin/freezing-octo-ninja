@@ -173,6 +173,7 @@ module Dex =
         member this.Descriptor with get () = dexf.Strings.[descriptor_idx]
         member this.Class with get () = cl
         member private this.SetClass (v) = cl <- Some v
+        override this.ToString () = this.Descriptor
 
     and
      [<JavaScript>]
@@ -180,6 +181,8 @@ module Dex =
         member this.Shorty with get () = dexf.Strings.[shorty_idx]
         member this.ReturnType with get () = return_type
         member this.Parameters with get () = parameters
+        override this.ToString () =
+            "(" + System.String.Join (", ", Array.map (fun t -> t.ToString ()) this.Parameters) + ") : " + this.ReturnType.ToString ()
     and
      [<JavaScript>]
      Class () = class end
