@@ -155,6 +155,7 @@ module Dex =
                                                    Array.map (fun i -> dexf.Types.[i]) <| DexFile.Read_type_list stream parameters_off)
 
         static member private Read_type_list stream offset =
+            if offset = 0 then [| |] else
             let oldpos = stream.Seek offset
             let size = stream.GetUInt32 ()
             let result : int array = [| |]
