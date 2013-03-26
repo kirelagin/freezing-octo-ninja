@@ -136,3 +136,4 @@ module Dex =
                 let prev_off = stream.Seek string_data_off
                 let utf16_size = stream.GetULeb128 ()
                 arrayPush dexf.strings <| stream.GetMUTF8String ()
+                stream.Seek prev_off |> ignore
