@@ -160,7 +160,7 @@ module Dex =
             let size = stream.GetUInt32 ()
             let result : int array = [| |]
             for i in {1..size} do
-                let type_idx = stream.GetUInt32 ()
+                let type_idx = stream.GetUInt16 ()
                 arrayPush result type_idx
             stream.Seek oldpos |> ignore
             result
