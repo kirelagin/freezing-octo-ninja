@@ -18,7 +18,6 @@ module Dex =
         member this.Length with get () = data.Length
         member this.Seek (newOffset : uint64) =
             offset <- newOffset
-            data.Get(0UL)
         member this.GetInt8 () : int =
             int (getByte ())
         member this.GetInt16 () : int =
