@@ -18,14 +18,14 @@ module Dex =
         member this.Length with get () = data.Length
         member this.Seek (newOffset : uint64) =
             offset <- newOffset
-        member this.GetInt8 () : int =
-            int (getByte ())
-        member this.GetInt16 () : int =
+        member this.GetByte () : byte =
+            getByte ()
+        member this.GetUInt16 () : int =
             let d = getBytes 2
             (int d.[1] <<< 8*1) ||| (int d.[0])
-        member this.GetInt32 () : int32 =
+        member this.GetUInt32 () : int =
             let d = getBytes 4
-            (int d.[3] <<< 8*3) ||| (int d.[2] <<< 8*2) ||| (int d.[1] <<< 8*1) ||| (int d.[0])
+            Numbers.unsign ((int d.[3] <<< 8*3) ||| (int d.[2] <<< 8*2) ||| (int d.[1] <<< 8*1) ||| (int d.[0]))
 
     type DexFile [<JavaScript>] private () =
         [<JavaScript>]
