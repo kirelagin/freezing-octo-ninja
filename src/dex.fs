@@ -4,9 +4,6 @@ module Dex =
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
 
-    [<Inline "$data[$i]">]
-    let get (data : Uint8Array) (i : int) = X<_> // HACK: this is to avoid WebSharper's integer conversion difficulties
-
     [<Inline "String.fromCharCode.apply(null, $bs)">]
     let charsToString (bs : int array) : string = X<_> // HACK: `System.Text.Encoding` is not working =(
 
@@ -19,7 +16,7 @@ module Dex =
         let mutable offset = 0
 
         let getByte () =
-            let r = get data offset
+            let r = data.Get (As<uint64> offset)
             offset <- offset + 1
             r
         member this.GetBytes (count : int) : byte array =
