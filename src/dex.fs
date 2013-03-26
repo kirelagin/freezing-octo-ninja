@@ -12,7 +12,7 @@ module Dex =
             let r = data.Get(offset)
             offset <- offset + 1UL
             r
-        let getBytes (count : int) : byte array =
+        member this.getBytes (count : int) : byte array =
             Array.init count (fun _ -> getByte())
 
         member this.Length with get () = data.Length
@@ -21,10 +21,10 @@ module Dex =
         member this.GetByte () : byte =
             getByte ()
         member this.GetUInt16 () : int =
-            let d = getBytes 2
+            let d = this.getBytes 2
             (int d.[1] <<< 8*1) ||| (int d.[0])
         member this.GetUInt32 () : int =
-            let d = getBytes 4
+            let d = this.getBytes 4
             Numbers.unsign ((int d.[3] <<< 8*3) ||| (int d.[2] <<< 8*2) ||| (int d.[1] <<< 8*1) ||| (int d.[0]))
 
     type DexFile [<JavaScript>] private () =
