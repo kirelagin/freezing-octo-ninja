@@ -82,12 +82,12 @@ module Dex =
 
     [<JavaScript>]
     type DexFile [<JavaScript>] private () =
-        member val strings : string array = [| |]
-        member val types = new ResizeArray<string>()
-        member val prototypes = new ResizeArray<string>()
-        member val fields = new ResizeArray<string>()
-        member val methods = new ResizeArray<string>()
-        member val classes = new ResizeArray<string>()
+        member val Strings : string array = [| |]
+        member val Types = new ResizeArray<string>()
+        member val Prototypes = new ResizeArray<string>()
+        member val Fields = new ResizeArray<string>()
+        member val Methods = new ResizeArray<string>()
+        member val Classes = new ResizeArray<string>()
 
         static member Read (bytes : Uint8Array) =
             let dexf = new DexFile ()
@@ -132,5 +132,23 @@ module Dex =
                 let string_data_off = stream.GetUInt32 ()
                 let prev_off = stream.Seek string_data_off
                 let utf16_size = stream.GetULeb128 ()
-                arrayPush dexf.strings <| stream.GetMUTF8String ()
+                arrayPush dexf.Strings <| stream.GetMUTF8String ()
                 stream.Seek prev_off |> ignore
+
+    and
+     [<JavaScript>]
+     Type (dexf : DexFile, descriptor_idx : int) =
+        let mutable cl : Class option = None
+
+        member this.Descriptor with get () = dexf.Strings.[descriptor_idx]
+        member this.Class with get () = cl
+        member private this.SetClass (v) = cl <- Some v
+
+    and
+     [<JavaScript>]
+     Proto (dexf : DexFile, shorty_idx : int, return_type_idx : int, parameters : Type array) =
+        member this.Shorty with get () = dexf.Strings.[shorty_idx]
+        //member this.ReturnType with get () = dexf.Types.[return_type_idx]
+    and
+     [<JavaScript>]
+     Class () = class end
