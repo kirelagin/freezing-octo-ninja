@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TEST</title>
+
+        <script src="../builder/Scripts/WebSharper.js" type="text/javascript"></script>
+        <script src="../builder/Scripts/IntelliFactory.WebSharper.dll.js" type="text/javascript"></script>
+        <script src="../builder/Scripts/IntelliFactory.WebSharper.Collections.dll.js" type="text/javascript"></script>
+
+        <script src="./output.js" type="text/javascript"></script>
+
+        <script type="text/javascript">
+        if (typeof IntelliFactory !== 'undefined')
+            IntelliFactory.Runtime.Start();
+        </script>
+    </head>
+
+    <body>
+        <input type="file" id="files" />
+        <output id="list"></output>
+
+        <script>
+            function handleFileSelect(evt) {
+                var file = evt.target.files[0];
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    bytes = new Uint8Array(e.target.result);
+                    Dalvik.VM.start(bytes);
+                }
+                reader.readAsArrayBuffer(file);
+            }
+
+          document.getElementById('files').addEventListener('change', handleFileSelect, false);
+        </script>
+
+    </body
+</html>
