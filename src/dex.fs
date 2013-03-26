@@ -22,11 +22,11 @@ module Dex =
         member this.GetInt8 () : int =
             int (getByte ())
         member this.GetInt16 () : int =
-            let d = Array.rev <| getBytes 2
-            (int d.[2] <<< 8*1) ||| (int d.[0])
+            let d = getBytes 2
+            (int d.[1] <<< 8*1) ||| (int d.[0])
         member this.GetInt32 () : int32 =
-            let d = Array.rev <| getBytes 4
-            (int d.[0] <<< 8*3) ||| (int d.[1] <<< 8*2) ||| (int d.[2] <<< 8*1) ||| (int d.[0])
+            let d = getBytes 4
+            (int d.[3] <<< 8*3) ||| (int d.[2] <<< 8*2) ||| (int d.[1] <<< 8*1) ||| (int d.[0])
 
     type DexFile [<JavaScript>] private () =
         [<JavaScript>]
