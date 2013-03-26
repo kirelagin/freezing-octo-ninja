@@ -14,20 +14,19 @@ module Dex =
             r
         let getBytes (count : int) : byte array =
             Array.init count (fun _ -> getByte())
-        let getConverted (count : int) convertor =
-            convertor (Array.rev <| getBytes count, 0)
 
         member this.Length with get () = data.Length
         member this.Seek (newOffset : uint64) =
             offset <- newOffset
             data.Get(0UL)
-        member this.GetByte () : byte =
-            getByte ()
-        member this.GetInt32 () =
-            getConverted 4 System.BitConverter.ToInt32
-        member this.GetUInt32 () =
-            getConverted 4 System.BitConverter.ToUInt32
-
+        member this.GetInt8 () : int =
+            int (getByte ())
+        member this.GetInt16 () : int =
+            let d = Array.rev <| getBytes 2
+            (int d.[2] <<< 8*1) ||| (int d.[0])
+        member this.GetInt32 () : int32 =
+            let d = Array.rev <| getBytes 4
+            (int d.[0] <<< 8*3) ||| (int d.[1] <<< 8*2) ||| (int d.[2] <<< 8*1) ||| (int d.[0])
 
     type DexFile [<JavaScript>] private () =
         [<JavaScript>]
