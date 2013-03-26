@@ -13,30 +13,30 @@ module Dex =
     
     [<JavaScript>]
     type DexFileArray [<JavaScript>] (data : Uint8Array) =
-        let mutable offset = 0
+        let mutable offset = 0u
 
         let getByte () =
-            let r = data.Get (As<uint64> offset)
-            offset <- offset + 1
+            let r = data.Get (uint64 offset)
+            offset <- offset + 1u
             r
         member this.GetBytes (count : int) : byte array =
             Array.init count (fun _ -> getByte())
 
         member this.Length with get () = data.Length
-        member this.Seek (newOffset : int) =
+        member this.Seek (newOffset : uint32) =
             let old = offset
             offset <- newOffset
             old
         member this.GetByte () : byte =
             getByte ()
-        member this.GetUInt16 () : int =
+        member this.GetUInt16 () : uint16 =
             let d = this.GetBytes 2
-            (int d.[1] * 256) ||| (int d.[0])
-        member this.GetUInt32 () : int =
+            (uint16 d.[1] * 256us) ||| (uint16 d.[0])
+        member this.GetUInt32 () : uint32 =
             let d = this.GetBytes 4
-            (int d.[3] * 0x1000000) ||| (int d.[2] * 0x10000) ||| (int d.[1] * 0x100) ||| (int d.[0])
+            (uint32 d.[3] * 0x1000000u) ||| (uint32 d.[2] * 0x10000u) ||| (uint32 d.[1] * 0x100u) ||| (uint32 d.[0])
 
-        member private this.GetLeb128 (signed : bool) =
+        member private this.GetLeb128 (signed : bool) : int32 =
             // FIXME: Awful imperative implementation (stolen from `dx`)
             let mutable result = 0
             let mutable count = 0
@@ -53,8 +53,8 @@ module Dex =
                 result ||| signBits
             else
                 result
-        member this.GetULeb128 () = Numbers.unsign <| this.GetLeb128 false
-        member this.GetSLeb128 () = this.GetLeb128 true
+        member this.GetULeb128 () : uint32 = uint32 (this.GetLeb128 false)
+        member this.GetSLeb128 () : int32 = this.GetLeb128 true
 
         member this.GetMUTF8String () : string =
             let out : int array = [| |]
@@ -94,24 +94,24 @@ module Dex =
             let stream = DexFileArray bytes
 
             let DEX_FILE_MAGIC = [| 0x64uy; 0x65uy; 0x78uy; 0x0auy; 0x30uy; 0x33uy; 0x35uy; 0x00uy; |]
-            let ENDIAN_CONSTANT = 0x12345678
+            let ENDIAN_CONSTANT = 0x12345678u
             let NO_INDEX = 0xffffffff
 
             // Reading header
-            stream.Seek 0 |> ignore
+            stream.Seek 0u |> ignore
             Array.iter (fun b ->
                 if (stream.GetByte() <> b) then failwith "Invalid DEX signature") DEX_FILE_MAGIC
             let checksum = stream.GetUInt32 ()
             let signature = stream.GetBytes 20
             let file_size = stream.GetUInt32 ()
             let header_size = stream.GetUInt32 ()
-            if header_size <> 0x70 then failwith "Wrong header size"
+            if header_size <> 0x70u then failwith "Wrong header size"
             let endian_tag = stream.GetUInt32 ()
             if endian_tag <> ENDIAN_CONSTANT then failwith "Only little-endian files are supported"
             let link_size = stream.GetUInt32 ()
-            if link_size <> 0 then failwith "Statically linked files are not supported"
+            if link_size <> 0u then failwith "Statically linked files are not supported"
             let link_off = stream.GetUInt32 ()
-            if link_off <> 0 then failwith "link_off should be 0"
+            if link_off <> 0u then failwith "link_off should be 0"
             let map_off = stream.GetUInt32 ()
             let string_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
             let type_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
@@ -130,7 +130,7 @@ module Dex =
         static member private Read_string_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
 
-            for i in {1..size} do
+            for i in {1..(int32 size)} do
                 let string_data_off = stream.GetUInt32 ()
                 let prev_off = stream.Seek string_data_off
                 let utf16_size = stream.GetULeb128 ()
@@ -140,26 +140,26 @@ module Dex =
         static member private Read_type_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
 
-            for i in {1..size} do
+            for i in {1..(int32 size)} do
                 let descriptor_idx = stream.GetUInt32 ()
                 arrayPush dexf.Types <| new Type(dexf, descriptor_idx)
 
         static member private Read_proto_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
 
-            for i in {1..size} do
+            for i in {1..(int32 size)} do
                 let shorty_idx = stream.GetUInt32 ()
                 let return_type_idx = stream.GetUInt32 ()
                 let parameters_off = stream.GetUInt32 ()
-                arrayPush dexf.Protos <| new Proto(dexf, shorty_idx, dexf.Types.[return_type_idx],
-                                                   Array.map (fun i -> dexf.Types.[i]) <| DexFile.Read_type_list stream parameters_off)
+                arrayPush dexf.Protos <| new Proto(dexf, shorty_idx, dexf.Types.[int32 return_type_idx],
+                                                   Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream parameters_off)
 
         static member private Read_type_list stream offset =
-            if offset = 0 then [| |] else
+            if offset = 0u then [| |] else
             let oldpos = stream.Seek offset
             let size = stream.GetUInt32 ()
-            let result : int array = [| |]
-            for i in {1..size} do
+            let result : uint16 array = [| |]
+            for i in {1..(int32 size)} do
                 let type_idx = stream.GetUInt16 ()
                 arrayPush result type_idx
             stream.Seek oldpos |> ignore
@@ -167,18 +167,18 @@ module Dex =
 
     and
      [<JavaScript>]
-     Type (dexf : DexFile, descriptor_idx : int) =
+     Type (dexf : DexFile, descriptor_idx : uint32) =
         let mutable cl : Class option = None
 
-        member this.Descriptor with get () = dexf.Strings.[descriptor_idx]
+        member this.Descriptor with get () = dexf.Strings.[int32 descriptor_idx]
         member this.Class with get () = cl
         member private this.SetClass (v) = cl <- Some v
         override this.ToString () = this.Descriptor
 
     and
      [<JavaScript>]
-     Proto (dexf : DexFile, shorty_idx : int, return_type : Type, parameters : Type array) =
-        member this.Shorty with get () = dexf.Strings.[shorty_idx]
+     Proto (dexf : DexFile, shorty_idx : uint32, return_type : Type, parameters : Type array) =
+        member this.Shorty with get () = dexf.Strings.[int32 shorty_idx]
         member this.ReturnType with get () = return_type
         member this.Parameters with get () = parameters
         override this.ToString () =
