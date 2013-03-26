@@ -3,45 +3,105 @@ namespace Dalvik
 module Dex =
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
+
+    [<Inline "$data[$i]">]
+    let get (data : Uint8Array) (i : int) = X<_> // HACK: this is to avoid WebSharper's integer conversion difficulties
     
     [<JavaScript>]
     type DexFileArray [<JavaScript>] (data : Uint8Array) =
-        let mutable offset = 0UL
+        let mutable offset = 0
 
         let getByte () =
-            let r = data.Get(offset)
-            offset <- offset + 1UL
+            let r = get data offset
+            offset <- offset + 1
             r
-        member this.getBytes (count : int) : byte array =
+        member this.GetBytes (count : int) : byte array =
             Array.init count (fun _ -> getByte())
 
         member this.Length with get () = data.Length
-        member this.Seek (newOffset : uint64) =
+        member this.Seek (newOffset : int) =
+            let old = offset
             offset <- newOffset
+            old
         member this.GetByte () : byte =
             getByte ()
         member this.GetUInt16 () : int =
-            let d = this.getBytes 2
-            (int d.[1] <<< 8*1) ||| (int d.[0])
+            let d = this.GetBytes 2
+            (int d.[1] * 256) ||| (int d.[0])
         member this.GetUInt32 () : int =
-            let d = this.getBytes 4
-            Numbers.unsign ((int d.[3] <<< 8*3) ||| (int d.[2] <<< 8*2) ||| (int d.[1] <<< 8*1) ||| (int d.[0]))
+            let d = this.GetBytes 4
+            (int d.[3] * 0x1000000) ||| (int d.[2] * 0x10000) ||| (int d.[1] * 0x100) ||| (int d.[0])
 
+        member private this.GetLeb128 (signed : bool) =
+            // FIXME: Awful imperative implementation
+            let mutable ans = 0
+            let mutable stop = false
+            let mutable i = 0
+            while not stop do
+                let c = int <| this.GetByte ()
+                ans <- ans ||| ((c &&& 0x7f) <<< 7*i)
+
+                if (c &&& 0x80) = 0 then
+                    stop <- true
+                    if signed && (c &&& 0x40) <> 0 && i <> 4 then
+                        let mask = (1 <<< (7*(i+1))) - 1
+                        ans <- ans ||| (~~~mask)
+                i <- i + 1
+            ans
+        member this.GetULeb128 () = Numbers.unsign <| this.GetLeb128 false
+        member this.GetSLeb128 () = this.GetLeb128 true
+
+    [<JavaScript>]
     type DexFile [<JavaScript>] private () =
-        [<JavaScript>]
         member val strings = new ResizeArray<string>()
-        [<JavaScript>]
         member val types = new ResizeArray<string>()
-        [<JavaScript>]
         member val prototypes = new ResizeArray<string>()
-        [<JavaScript>]
         member val fields = new ResizeArray<string>()
-        [<JavaScript>]
         member val methods = new ResizeArray<string>()
-        [<JavaScript>]
         member val classes = new ResizeArray<string>()
 
-        [<JavaScript>]
-        static member Init () =
-            let a = new DexFile ()
-            a
+        static member Read (bytes : Uint8Array) =
+            let dexf = new DexFile ()
+            let stream = DexFileArray bytes
+
+            let DEX_FILE_MAGIC = [| 0x64uy; 0x65uy; 0x78uy; 0x0auy; 0x30uy; 0x33uy; 0x35uy; 0x00uy; |]
+            let ENDIAN_CONSTANT = 0x12345678
+            let NO_INDEX = 0xffffffff
+
+            // Reading header
+            stream.Seek 0 |> ignore
+            Array.iter (fun b ->
+                if (stream.GetByte() <> b) then failwith "Invalid DEX signature") DEX_FILE_MAGIC
+            let checksum = stream.GetUInt32 ()
+            let signature = stream.GetBytes 20
+            let file_size = stream.GetUInt32 ()
+            let header_size = stream.GetUInt32 ()
+            if header_size <> 0x70 then failwith "Wrong header size"
+            let endian_tag = stream.GetUInt32 ()
+            if endian_tag <> ENDIAN_CONSTANT then failwith "Only little-endian files are supported"
+            let link_size = stream.GetUInt32 ()
+            if link_size <> 0 then failwith "Statically linked files are not supported"
+            let link_off = stream.GetUInt32 ()
+            if link_off <> 0 then failwith "link_off should be 0"
+            let map_off = stream.GetUInt32 ()
+            let string_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
+            let type_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
+            let proto_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
+            let field_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
+            let method_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
+            let class_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
+            let data = (stream.GetUInt32 (), stream.GetUInt32 ())
+
+            DexFile.Read_string_ids stream string_ids dexf
+
+            dexf
+
+        static member private Read_string_ids stream (size, offset) dexf =
+            stream.Seek offset |> ignore
+
+            for i in {0..(size-1)} do
+                let string_data_off = stream.GetUInt32 ()
+                let prev_off = stream.Seek string_data_off
+                let utf16_size = stream.GetULeb128 ()
+                ()
+                //dexf.strings.Add stream.GetMUTF8String ()
