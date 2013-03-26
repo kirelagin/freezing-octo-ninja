@@ -6,4 +6,4 @@ module VM =
 
     [<JavaScript>]
     let start (bytes : Uint8Array) =
-        JavaScript.Alert(bytes.ToString())
+        Dex.DexFileArray bytes
