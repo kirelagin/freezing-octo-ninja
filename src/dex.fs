@@ -81,31 +81,21 @@ module Dex =
 
 
     [<JavaScript>]
-    type DexFile [<JavaScript>] (bytes : Uint8Array) =
-        let strings : string array = [| |]
-        let types = new ResizeArray<string>()
-        let prototypes = new ResizeArray<string>()
-        let fields = new ResizeArray<string>()
-        let methods = new ResizeArray<string>()
-        let classes = new ResizeArray<string>()
+    type DexFile [<JavaScript>] private () =
+        member val strings : string array = [| |]
+        member val types = new ResizeArray<string>()
+        member val prototypes = new ResizeArray<string>()
+        member val fields = new ResizeArray<string>()
+        member val methods = new ResizeArray<string>()
+        member val classes = new ResizeArray<string>()
 
-        let NO_INDEX = 0xffffffff
-
-        let read_string_ids (stream : DexFileArray) (size, offset) =
-            stream.Seek offset |> ignore
-
-            for i in {0..(size-1)} do
-                let string_data_off = stream.GetUInt32 ()
-                let prev_off = stream.Seek string_data_off
-                let utf16_size = stream.GetULeb128 ()
-                arrayPush strings <| stream.GetMUTF8String ()
-                stream.Seek prev_off |> ignore
-
-        do
+        static member Read (bytes : Uint8Array) =
+            let dexf = new DexFile ()
             let stream = DexFileArray bytes
 
             let DEX_FILE_MAGIC = [| 0x64uy; 0x65uy; 0x78uy; 0x0auy; 0x30uy; 0x33uy; 0x35uy; 0x00uy; |]
             let ENDIAN_CONSTANT = 0x12345678
+            let NO_INDEX = 0xffffffff
 
             // Reading header
             stream.Seek 0 |> ignore
@@ -131,6 +121,16 @@ module Dex =
             let class_ids = (stream.GetUInt32 (), stream.GetUInt32 ())
             let data = (stream.GetUInt32 (), stream.GetUInt32 ())
 
-            read_string_ids stream string_ids
+            DexFile.Read_string_ids stream string_ids dexf
 
-        member this.Strings = strings
+            dexf
+
+        static member private Read_string_ids stream (size, offset) dexf =
+            stream.Seek offset |> ignore
+
+            for i in {0..(size-1)} do
+                let string_data_off = stream.GetUInt32 ()
+                let prev_off = stream.Seek string_data_off
+                let utf16_size = stream.GetULeb128 ()
+                arrayPush dexf.strings <| stream.GetMUTF8String ()
+                stream.Seek prev_off |> ignore
