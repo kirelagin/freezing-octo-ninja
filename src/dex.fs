@@ -33,21 +33,22 @@ module Dex =
             (int d.[3] * 0x1000000) ||| (int d.[2] * 0x10000) ||| (int d.[1] * 0x100) ||| (int d.[0])
 
         member private this.GetLeb128 (signed : bool) =
-            // FIXME: Awful imperative implementation
-            let mutable ans = 0
+            // FIXME: Awful imperative implementation (stolen from `dx`)
+            let mutable result = 0
+            let mutable count = 0
+            let mutable signBits = -1
             let mutable stop = false
-            let mutable i = 0
             while not stop do
-                let c = int <| this.GetByte ()
-                ans <- ans ||| ((c &&& 0x7f) <<< 7*i)
-
-                if (c &&& 0x80) = 0 then
-                    stop <- true
-                    if signed && (c &&& 0x40) <> 0 && i <> 4 then
-                        let mask = (1 <<< (7*(i+1))) - 1
-                        ans <- ans ||| (~~~mask)
-                i <- i + 1
-            ans
+                let cur = int <| this.GetByte ()
+                result <- result ||| ((cur &&& 0x7f) <<< (count * 7))
+                signBits <- signBits <<< 7
+                count <- count + 1
+                if (cur &&& 0x80) = 0 then
+                    stop <- true 
+            if signed && ((signBits >>> 1) &&& result) <> 0 then
+                result ||| signBits
+            else
+                result
         member this.GetULeb128 () = Numbers.unsign <| this.GetLeb128 false
         member this.GetSLeb128 () = this.GetLeb128 true
 
