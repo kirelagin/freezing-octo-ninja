@@ -83,8 +83,8 @@ module Dex =
     [<JavaScript>]
     type DexFile [<JavaScript>] private () =
         member val Strings : string array = [| |]
-        member val Types = new ResizeArray<string>()
-        member val Prototypes = new ResizeArray<string>()
+        member val Types : Type array = [| |]
+        member val Protos : Proto array = [| |]
         member val Fields = new ResizeArray<string>()
         member val Methods = new ResizeArray<string>()
         member val Classes = new ResizeArray<string>()
@@ -122,18 +122,47 @@ module Dex =
             let data = (stream.GetUInt32 (), stream.GetUInt32 ())
 
             DexFile.Read_string_ids stream string_ids dexf
+            DexFile.Read_type_ids stream type_ids dexf
+            DexFile.Read_proto_ids stream proto_ids dexf
 
             dexf
 
         static member private Read_string_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
 
-            for i in {0..(size-1)} do
+            for i in {1..size} do
                 let string_data_off = stream.GetUInt32 ()
                 let prev_off = stream.Seek string_data_off
                 let utf16_size = stream.GetULeb128 ()
                 arrayPush dexf.Strings <| stream.GetMUTF8String ()
                 stream.Seek prev_off |> ignore
+
+        static member private Read_type_ids stream (size, offset) dexf =
+            stream.Seek offset |> ignore
+
+            for i in {1..size} do
+                let descriptor_idx = stream.GetUInt32 ()
+                arrayPush dexf.Types <| new Type(dexf, descriptor_idx)
+
+        static member private Read_proto_ids stream (size, offset) dexf =
+            stream.Seek offset |> ignore
+
+            for i in {1..size} do
+                let shorty_idx = stream.GetUInt32 ()
+                let return_type_idx = stream.GetUInt32 ()
+                let parameters_off = stream.GetUInt32 ()
+                arrayPush dexf.Protos <| new Proto(dexf, shorty_idx, dexf.Types.[return_type_idx],
+                                                   Array.map (fun i -> dexf.Types.[i]) <| DexFile.Read_type_list stream parameters_off)
+
+        static member private Read_type_list stream offset =
+            let oldpos = stream.Seek offset
+            let size = stream.GetUInt32 ()
+            let result : int array = [| |]
+            for i in {1..size} do
+                let type_idx = stream.GetUInt32 ()
+                arrayPush result type_idx
+            stream.Seek oldpos |> ignore
+            result
 
     and
      [<JavaScript>]
@@ -146,9 +175,10 @@ module Dex =
 
     and
      [<JavaScript>]
-     Proto (dexf : DexFile, shorty_idx : int, return_type_idx : int, parameters : Type array) =
+     Proto (dexf : DexFile, shorty_idx : int, return_type : Type, parameters : Type array) =
         member this.Shorty with get () = dexf.Strings.[shorty_idx]
-        //member this.ReturnType with get () = dexf.Types.[return_type_idx]
+        member this.ReturnType with get () = return_type
+        member this.Parameters with get () = parameters
     and
      [<JavaScript>]
      Class () = class end
