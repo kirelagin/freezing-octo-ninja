@@ -1,1 +1,8 @@
 /build/
+
+# Visual Studio
+*.sln
+*.suo
+*.fsproj
+/src/obj/
+/src/bin/
