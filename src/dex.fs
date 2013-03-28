@@ -143,7 +143,7 @@ module Dex =
             stream.Seek offset |> ignore
             for i in {1..(int32 size)} do
                 let descriptor_idx = stream.GetUInt32 ()
-                arrayPush dexf.Types <| new Type(dexf, dexf.Strings.[int32 descriptor_idx])
+                arrayPush dexf.Types <| new Type(dexf.Strings.[int32 descriptor_idx])
 
         static member private Read_proto_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -151,7 +151,7 @@ module Dex =
                 let shorty_idx = stream.GetUInt32 ()
                 let return_type_idx = stream.GetUInt32 ()
                 let parameters_off = stream.GetUInt32 ()
-                arrayPush dexf.Protos <| new Proto(dexf, dexf.Strings.[int32 shorty_idx], dexf.Types.[int32 return_type_idx],
+                arrayPush dexf.Protos <| new Proto(dexf.Strings.[int32 shorty_idx], dexf.Types.[int32 return_type_idx],
                                                    Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream parameters_off)
 
         static member private Read_field_ids stream (size, offset) dexf =
@@ -160,7 +160,7 @@ module Dex =
                 let class_idx = stream.GetUInt16 ()
                 let type_idx = stream.GetUInt16 ()
                 let name_idx = stream.GetUInt32 ()
-                arrayPush dexf.Fields <| new Field(dexf, dexf.Types.[int32 class_idx], dexf.Types.[int32 type_idx], dexf.Strings.[int32 name_idx])
+                arrayPush dexf.Fields <| new Field(dexf.Types.[int32 class_idx], dexf.Types.[int32 type_idx], dexf.Strings.[int32 name_idx])
 
         static member private Read_method_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -168,7 +168,7 @@ module Dex =
                 let class_idx = stream.GetUInt16 ()
                 let proto_idx = stream.GetUInt16 ()
                 let name_idx = stream.GetUInt32 ()
-                arrayPush dexf.Methods <| new Method(dexf, dexf.Types.[int32 class_idx], dexf.Protos.[int32 proto_idx], dexf.Strings.[int32 name_idx])
+                arrayPush dexf.Methods <| new Method(dexf.Types.[int32 class_idx], dexf.Protos.[int32 proto_idx], dexf.Strings.[int32 name_idx])
 
         static member private Read_class_defs stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -181,7 +181,7 @@ module Dex =
                 let annotations_off = stream.GetUInt32 ()
                 let class_data_off = stream.GetUInt32 ()
                 let static_values_off = stream.GetUInt32 ()
-                arrayPush dexf.Classes <| new Class(dexf, dexf.Types.[int32 class_idx], access_flags,
+                arrayPush dexf.Classes <| new Class(dexf.Types.[int32 class_idx], access_flags,
                                                     (if superclass_idx = 0u then None else Some dexf.Types.[int32 superclass_idx]),
                                                     Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
                                                     dexf.Strings.[int32 source_file_idx], (*annotations smth,*) class_data_off, static_values_off)
@@ -199,13 +199,13 @@ module Dex =
 
     and
      [<JavaScript>]
-     Type (dexf : DexFile, descriptor : string) =
+     Type (descriptor : string) =
         member this.Descriptor = descriptor
         override this.ToString () = descriptor
 
     and
      [<JavaScript>]
-     Proto (dexf : DexFile, shorty : string, return_type : Type, parameters : Type array) =
+     Proto (shorty : string, return_type : Type, parameters : Type array) =
         member this.Shorty = shorty
         member this.ReturnType = return_type
         member this.Parameters = parameters
@@ -213,7 +213,7 @@ module Dex =
             "(" + String.concat ", " (Array.map (fun t -> t.ToString ()) parameters) + ") -> " + return_type.ToString () 
     and
      [<JavaScript>]
-     Field (dexf : DexFile, dclass : Type, dtype : Type, name : string) =
+     Field (dclass : Type, dtype : Type, name : string) =
         member this.Class = dclass
         member this.Type = dtype
         member this.Name = name
@@ -221,7 +221,7 @@ module Dex =
             name + " : " + dclass.ToString()
     and
      [<JavaScript>]
-     Method (dexf : DexFile, dclass : Type, proto : Proto, name : string) =
+     Method (dclass : Type, proto : Proto, name : string) =
         member this.Class = dclass
         member this.Proto = proto
         member this.Name = name
@@ -229,7 +229,7 @@ module Dex =
             name + " : " + proto.ToString()
     and
      [<JavaScript>]
-     Class (dexf : DexFile, dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
+     Class (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
             source_file : string, (*annotations : ?,*) class_data_off : uint32, static_values_off : uint32) =
         member this.Class = dclass
         (* access_flags getters *)
