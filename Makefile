@@ -5,7 +5,7 @@ WEBSHARPER_OPTS := $(shell cat builder/wsarg.txt)
 
 
 # Order matters!
-INPUT := src/convertions.fs src/dex.fs src/vm.fs
+INPUT := src/jsutil.fs src/filearray.fs srd/bytecode.fs src/dex.fs src/vm.fs
 
 
 build : build/output.js build/run.html

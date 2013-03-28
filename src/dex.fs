@@ -4,81 +4,9 @@ module Dex =
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
 
-    [<Inline "String.fromCharCode.apply(null, $bs)">]
-    let charsToString (bs : int array) : string = X<_> // HACK: `System.Text.Encoding` is not working =(
-
-    [<Inline "$arr.push($x)">]
-    let arrayPush (arr : 'a array) (x : 'a) : unit = X<_>
-
-    
+    // FS0452, so it's here. TODO: move elsewhere.
     [<JavaScript>]
-    type DexFileArray [<JavaScript>] (data : Uint8Array) =
-        let mutable offset = 0u
-
-        let getByte () =
-            let r = data.Get (uint64 offset)
-            offset <- offset + 1u
-            r
-        member this.GetBytes (count : int) : byte array =
-            Array.init count (fun _ -> getByte())
-
-        member this.Length = data.Length
-        member this.Seek (newOffset : uint32) =
-            let old = offset
-            offset <- newOffset
-            old
-        member this.GetByte () : byte =
-            getByte ()
-        member this.GetUInt16 () : uint16 =
-            let d = this.GetBytes 2
-            (uint16 d.[1] * 256us) ||| (uint16 d.[0])
-        member this.GetUInt32 () : uint32 =
-            let d = this.GetBytes 4
-            (uint32 d.[3] * 0x1000000u) ||| (uint32 d.[2] * 0x10000u) ||| (uint32 d.[1] * 0x100u) ||| (uint32 d.[0])
-
-        member private this.GetLeb128 (signed : bool) : int32 =
-            // FIXME: Awful imperative implementation (stolen from `dx`)
-            let mutable result = 0
-            let mutable count = 0
-            let mutable signBits = -1
-            let mutable stop = false
-            while not stop do
-                let cur = int <| this.GetByte ()
-                result <- result ||| ((cur &&& 0x7f) <<< (count * 7))
-                signBits <- signBits <<< 7
-                count <- count + 1
-                if (cur &&& 0x80) = 0 then
-                    stop <- true 
-            if signed && ((signBits >>> 1) &&& result) <> 0 then
-                result ||| signBits
-            else
-                result
-        member this.GetULeb128 () : uint32 = uint32 (this.GetLeb128 false)
-        member this.GetSLeb128 () : int32 = this.GetLeb128 true
-
-        member this.GetMUTF8String () : string =
-            let out : int array = [| |]
-            let mutable stop = false
-            while not stop do
-                let a = int <| this.GetByte ()
-                if a = 0 then
-                    stop <- true
-                else
-                    if a < 0x80 then
-                        arrayPush out a
-                    else if (a &&& 0xe0) = 0xc0 then
-                        let b = int <| this.GetByte ()
-                        if ((b &&& 0xc0) <> 0x80) then failwith "MUTF-8: Bad second byte"
-                        arrayPush out (((a &&& 0x1f) <<< 6) ||| (b &&& 0x3f))
-                    else if (a &&& 0xf0) = 0xe0 then
-                        let b = int <| this.GetByte ()
-                        let c = int <| this.GetByte ()
-                        if ((b &&& 0xc0) <> 0x80) || ((c &&& 0xc0) <> 0x80) then failwith "MUTF-8: Bad second or third byte"
-                        arrayPush out (((a &&& 0x0f) <<< 12) ||| ((b &&& 0x3f) <<< 6) ||| (c &&& 0x3f))
-                    else
-                        failwith "MUTF-8: Bad byte"
-            charsToString out
-
+    let NO_INDEX = 0xffffffffu
 
     [<JavaScript>]
     type DexFile [<JavaScript>] private () =
@@ -91,11 +19,10 @@ module Dex =
 
         static member Read (bytes : Uint8Array) =
             let dexf = new DexFile ()
-            let stream = DexFileArray bytes
+            let stream = FileArray.DexFileArray bytes
 
             let DEX_FILE_MAGIC = [| 0x64uy; 0x65uy; 0x78uy; 0x0auy; 0x30uy; 0x33uy; 0x35uy; 0x00uy; |]
             let ENDIAN_CONSTANT = 0x12345678u
-            let NO_INDEX = 0xffffffff
 
             // Reading header
             stream.Seek 0u |> ignore
@@ -136,14 +63,14 @@ module Dex =
                 let string_data_off = stream.GetUInt32 ()
                 let prev_off = stream.Seek string_data_off
                 let utf16_size = stream.GetULeb128 ()
-                arrayPush dexf.Strings <| stream.GetMUTF8String ()
+                Array.push dexf.Strings <| stream.GetMUTF8String ()
                 stream.Seek prev_off |> ignore
 
         static member private Read_type_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
             for i in {1..(int32 size)} do
                 let descriptor_idx = stream.GetUInt32 ()
-                arrayPush dexf.Types <| new Type(dexf.Strings.[int32 descriptor_idx])
+                Array.push dexf.Types <| new Type(dexf.Strings.[int32 descriptor_idx])
 
         static member private Read_proto_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -151,7 +78,7 @@ module Dex =
                 let shorty_idx = stream.GetUInt32 ()
                 let return_type_idx = stream.GetUInt32 ()
                 let parameters_off = stream.GetUInt32 ()
-                arrayPush dexf.Protos <| new Proto(dexf.Strings.[int32 shorty_idx], dexf.Types.[int32 return_type_idx],
+                Array.push dexf.Protos <| new Proto(dexf.Strings.[int32 shorty_idx], dexf.Types.[int32 return_type_idx],
                                                    Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream parameters_off)
 
         static member private Read_field_ids stream (size, offset) dexf =
@@ -160,7 +87,7 @@ module Dex =
                 let class_idx = stream.GetUInt16 ()
                 let type_idx = stream.GetUInt16 ()
                 let name_idx = stream.GetUInt32 ()
-                arrayPush dexf.Fields <| new Field(dexf.Types.[int32 class_idx], dexf.Types.[int32 type_idx], dexf.Strings.[int32 name_idx])
+                Array.push dexf.Fields <| new Field(dexf.Types.[int32 class_idx], dexf.Types.[int32 type_idx], dexf.Strings.[int32 name_idx])
 
         static member private Read_method_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -168,7 +95,7 @@ module Dex =
                 let class_idx = stream.GetUInt16 ()
                 let proto_idx = stream.GetUInt16 ()
                 let name_idx = stream.GetUInt32 ()
-                arrayPush dexf.Methods <| new Method(dexf.Types.[int32 class_idx], dexf.Protos.[int32 proto_idx], dexf.Strings.[int32 name_idx])
+                Array.push dexf.Methods <| new Method(dexf.Types.[int32 class_idx], dexf.Protos.[int32 proto_idx], dexf.Strings.[int32 name_idx])
 
         static member private Read_class_defs stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -181,10 +108,66 @@ module Dex =
                 let annotations_off = stream.GetUInt32 ()
                 let class_data_off = stream.GetUInt32 ()
                 let static_values_off = stream.GetUInt32 ()
-                arrayPush dexf.Classes <| new Class(dexf.Types.[int32 class_idx], access_flags,
-                                                    (if superclass_idx = 0u then None else Some dexf.Types.[int32 superclass_idx]),
+
+                // Reading class_data
+                stream.Seek class_data_off |> ignore
+
+                let static_fields : Field array = [| |]
+                let instance_fields : Field array = [| |]
+                let direct_methods : Method array = [| |]
+                let virtual_methods : Method array= [| |]
+
+                let static_fields_size = stream.GetULeb128 ()
+                let instance_fields_size = stream.GetULeb128 ()
+                let direct_methods_size = stream.GetULeb128 ()
+                let virtual_methods_size = stream.GetULeb128 ()
+
+                let encoded_fields (count : uint32) (arr : Field array) =
+                    let mutable field_idx = 0u
+                    for i in {1..(int32 count)} do
+                        let field_idx_diff = stream.GetULeb128 ()
+                        let access_flags = stream.GetULeb128 ()
+                        field_idx <- field_idx + field_idx_diff
+                        let field = dexf.Fields.[int32 field_idx]
+                        field.AccessFlags <- access_flags
+                        Array.push arr field
+
+                let encoded_methods (count : uint32) (arr : Method array) =
+                    let mutable method_idx = 0u
+                    for i in {1..(int32 count)} do
+                        let method_idx_diff = stream.GetULeb128 ()
+                        let access_flags = stream.GetULeb128 ()
+                        let code_off = stream.GetULeb128 ()
+                        method_idx <- method_idx + method_idx_diff
+                        let meth = dexf.Methods.[int32 method_idx]
+                        meth.AccessFlags <- access_flags
+                        if code_off <> 0u then
+                            let old_off = stream.Seek(code_off)
+                            meth.RegistersSize <- stream.GetUInt16 ()
+                            meth.InsSize <- stream.GetUInt16 ()
+                            meth.OutsSize <- stream.GetUInt16 ()
+                            let tries_size = stream.GetUInt16 ()
+                            let debug_info_off = stream.GetUInt32 ()
+                            let insns_size = stream.GetUInt32 ()
+                            // TODO: meth.Insns <- ByteCode.ReadBytes stream
+                            if tries_size <> 0us && insns_size % 2u <> 0u then
+                                stream.GetUInt16 () |> ignore
+                            // TODO: read tries and handlers
+                            stream.Seek old_off |> ignore
+                        Array.push arr meth
+                
+                encoded_fields static_fields_size static_fields
+                encoded_fields instance_fields_size instance_fields
+                encoded_methods direct_methods_size direct_methods
+                encoded_methods virtual_methods_size virtual_methods
+
+                Array.push dexf.Classes <| new Class(dexf.Types.[int32 class_idx], access_flags,
+                                                    (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
                                                     Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
-                                                    dexf.Strings.[int32 source_file_idx], (*annotations smth,*) class_data_off, static_values_off)
+                                                    (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
+                                                    (* TODO: annotations smth,*)
+                                                    static_fields, instance_fields, direct_methods, virtual_methods,
+                                                    static_values_off)
 
         static member private Read_type_list stream offset =
             if offset = 0u then [| |] else
@@ -193,7 +176,7 @@ module Dex =
             let result : uint16 array = [| |]
             for i in {1..(int32 size)} do
                 let type_idx = stream.GetUInt16 ()
-                arrayPush result type_idx
+                Array.push result type_idx
             stream.Seek oldpos |> ignore
             result
 
@@ -217,6 +200,7 @@ module Dex =
         member this.Class = dclass
         member this.Type = dtype
         member this.Name = name
+        member val AccessFlags = 0u with get, set
         override this.ToString () =
             name + " : " + dclass.ToString()
     and
@@ -225,19 +209,25 @@ module Dex =
         member this.Class = dclass
         member this.Proto = proto
         member this.Name = name
+        member val AccessFlags = 0u with get, set
+        member val RegistersSize = 0us with get, set
+        member val InsSize = 0us with get, set
+        member val OutsSize = 0us with get, set
+        member val Insns : ByteCode.Instruction array = [| |] with get, set
         override this.ToString () =
             name + " : " + proto.ToString()
     and
      [<JavaScript>]
      Class (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
-            source_file : string, (*annotations : ?,*) class_data_off : uint32, static_values_off : uint32) =
+            source_file : string option, (* TODO: annotations : ?,*)
+            static_fields : Field array, instance_fields : Field array, direct_methods : Method array, virual_methods : Method array,
+            static_values_off : uint32) =
         member this.Class = dclass
-        (* access_flags getters *)
+        (* TODO: access_flags getters *)
         member this.Super = superclass
         member this.Interfaces = interfaces
         member this.SourceFile = source_file
-        (* annotations *)
-        (* class data *)
-        (* static values *)
+        (* TODO: annotations *)
+        (* TODO: static values *)
         override this.ToString () =
             "class " + dclass.ToString () 
