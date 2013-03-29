@@ -9,19 +9,22 @@ module JsUtil =
     module Conversions =
         open IntelliFactory.WebSharper
 
+        // This is any JS number, since all numbers in
+        // JS are 64bit floating-point
+        type float64 = int64
         [<Inline "$0">]
+        let inline float64 x = X<_>
+
+        [<Inline "$0 & 65535">]
         let inline uint16 x = uint16 x
 
-        [<Inline "$0">]
+        [<Inline "$0 | 0">]
         let inline int32 x = int32 x
 
         // Don't forget to call this when working with bit-operations
         // even if you think you already got an unsigned int!
-        [<Inline "$0 >>> 0">]
+        [<Inline "($0 | 0) >>> 0">]
         let inline uint32 x = uint32 x
-
-        [<Inline "$0">]
-        let inline uint64 x = uint64 x
 
     module Array =
         [<Inline "$arr.push($x)">]
@@ -67,3 +70,9 @@ module JsUtil =
         member this.ShiftRight (numBit : int32) : GLong  = X<_>
         [<Name "shiftRightUnsigned">]
         member this.ShiftRightUnsigned (numBit : int32) : GLong  = X<_>
+
+    [<JavaScript>]
+    type JsValue =
+        | JsNumber of float64
+        | JsLong of GLong
+        | JsRef of obj

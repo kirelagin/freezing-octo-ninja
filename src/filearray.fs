@@ -11,21 +11,21 @@ module FileArray =
     [<Stub>]
     type DataView (data : ArrayBuffer) =
         [<Name "getInt8">]
-        member this.GetInt8(byteOffset : uint64) : int8 = X<_>
+        member this.GetInt8(byteOffset : float64) : int8 = X<_>
         [<Name "getUint8">]
-        member this.GetUint8(byteOffset : uint64) : uint8 = X<_>
+        member this.GetUint8(byteOffset : float64) : uint8 = X<_>
         [<Name "getInt16">]
-        member this.GetInt16(byteOffset : uint64, littleEndian : bool) : int16 = X<_>
+        member this.GetInt16(byteOffset : float64, littleEndian : bool) : int16 = X<_>
         [<Name "getUint16">]
-        member this.GetUint16(byteOffset : uint64, littleEndian : bool) : uint16 = X<_>
+        member this.GetUint16(byteOffset : float64, littleEndian : bool) : uint16 = X<_>
         [<Name "getInt32">]
-        member this.GetInt32(byteOffset : uint64, littleEndian : bool) : int32 = X<_>
+        member this.GetInt32(byteOffset : float64, littleEndian : bool) : int32 = X<_>
         [<Name "getUint32">]
-        member this.GetUint32(byteOffset : uint64, littleEndian : bool) : uint32 = X<_>
+        member this.GetUint32(byteOffset : float64, littleEndian : bool) : uint32 = X<_>
         [<Name "getFloat32">]
-        member this.GetFloat32(byteOffset : uint64, littleEndian : bool) : float32 = X<_>
+        member this.GetFloat32(byteOffset : float64, littleEndian : bool) : float32 = X<_>
         [<Name "getFloat64">]
-        member this.GetFloat64(byteOffset : uint64, littleEndian : bool) : double = X<_>
+        member this.GetFloat64(byteOffset : float64, littleEndian : bool) : double = X<_>
 
     [<JavaScript>]
     type FileArray (data : ArrayBuffer) =
@@ -33,7 +33,7 @@ module FileArray =
         let view = new DataView(data)
 
         let getByte () : byte =
-            let r = view.GetUint8 (uint64 offset)
+            let r = view.GetUint8 (float64 offset)
             offset <- offset + 1u
             r
         member this.GetBytes (count : int) : byte array =
@@ -47,11 +47,11 @@ module FileArray =
         member this.GetByte () : byte =
             getByte ()
         member this.GetUInt16 () : uint16 =
-            let r = view.GetUint16 (uint64 offset, true)
+            let r = view.GetUint16 (float64 offset, true)
             offset <- offset + 2u
             r
         member this.GetUInt32 () : uint32 =
-            let r = view.GetUint32 (uint64 offset, true)
+            let r = view.GetUint32 (float64 offset, true)
             offset <- offset + 4u
             r
 
