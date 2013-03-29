@@ -149,7 +149,7 @@ module Dex =
                             let tries_size = stream.GetUInt16 ()
                             let debug_info_off = stream.GetUInt32 ()
                             let insns_size = stream.GetUInt32 ()
-                            // TODO: meth.Insns <- ByteCode.ReadBytes stream
+                            meth.Insns <- ByteCode.Read stream
                             if tries_size <> 0us && insns_size % 2u <> 0u then
                                 stream.GetUInt16 () |> ignore
                             // TODO: read tries and handlers
