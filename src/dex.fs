@@ -161,13 +161,17 @@ module Dex =
                 encoded_methods direct_methods_size direct_methods
                 encoded_methods virtual_methods_size virtual_methods
 
+                // Reading static values
+                stream.Seek static_values_off |> ignore
+                let static_values = DexFile.Read_encoded_array stream dexf
+
                 Array.push dexf.Classes <| new Class(dexf.Types.[int32 class_idx], access_flags,
                                                     (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
                                                     Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
                                                     (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
                                                     (* TODO: annotations smth,*)
                                                     static_fields, instance_fields, direct_methods, virtual_methods,
-                                                    static_values_off)
+                                                    static_values)
 
         static member private Read_type_list stream offset =
             if offset = 0u then [| |] else
@@ -179,6 +183,34 @@ module Dex =
                 Array.push result type_idx
             stream.Seek oldpos |> ignore
             result
+
+        static member private Read_encoded_array stream dexf =
+            let size = stream.GetULeb128 ()
+            Array.init (int size) (fun _ -> DexFile.Read_encoded_value stream dexf)
+
+        static member private Read_encoded_value stream dexf =
+            let value_tag = stream.GetByte ()
+            let value_arg = (value_tag >>> 5) &&& 0x7uy
+            let value_type = value_tag &&& 0x1uy
+            match value_type with
+                | 0x00uy -> JsNumber << float64 <| stream.GetByte ()
+                | 0x02uy -> JsNumber << float64 <| stream.GetInt16Var (int value_arg + 1)
+                | 0x03uy -> JsNumber << float64 <| stream.GetUInt16Var (int value_arg + 1)
+                | 0x04uy -> JsNumber << float64 <| stream.GetInt32Var (int value_arg + 1)
+                //| 0x06uy -> JsLong << float64 <| stream.GetInt32Var (int value_arg + 1)
+                | 0x10uy -> JsNumber << float64 <| stream.GetFloatVar (int value_arg + 1)
+                | 0x11uy -> JsNumber << float64 <| stream.GetDoubleVar (int value_arg + 1)
+                | 0x17uy -> JsRef << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x18uy -> JsRef << As<obj> <| dexf.Types.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x19uy -> JsRef << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x1Auy -> JsRef << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x1Buy -> JsRef << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x1Cuy -> JsRef << As<obj> <| DexFile.Read_encoded_array stream dexf
+                | 0x1duy -> failwith "Annotations are not supported" // TODO: annotations
+                | 0x1Euy -> JsRef null
+                | 0x1Fuy -> JsNumber << float64 <| value_arg
+                | _ -> failwith "Unsupported encoded_value type"
+
 
     and
      [<JavaScript>]
@@ -221,7 +253,7 @@ module Dex =
      Class (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
             source_file : string option, (* TODO: annotations : ?,*)
             static_fields : Field array, instance_fields : Field array, direct_methods : Method array, virual_methods : Method array,
-            static_values_off : uint32) =
+            static_values : JsValue array) =
         member this.Class = dclass
         (* TODO: access_flags getters *)
         member this.Super = superclass

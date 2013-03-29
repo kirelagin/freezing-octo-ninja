@@ -44,16 +44,40 @@ module FileArray =
             let old = offset
             offset <- newOffset
             old
+
+        member this.GetBytesVar (given : int) (expected : int) (signExtend : bool) : byte array =
+            let d = this.GetBytes given
+            let fill = if signExtend && (d.[given-1] &&& 0x80uy) <> 0uy then 0xFFuy else 0x00uy
+            Array.append d (Array.create (expected - given) fill)
+
         member this.GetByte () : byte =
             getByte ()
+        member this.GetInt16Var (given : int) : int16 =
+            let n = new Int16Array((new Uint8Array(this.GetBytesVar given 2 true)).Buffer)
+            n.Get(0uL)
         member this.GetUInt16 () : uint16 =
             let r = view.GetUint16 (float64 offset, true)
             offset <- offset + 2u
             r
+        member this.GetUInt16Var (given : int) : uint16 =
+            let n = new Uint16Array((new Uint8Array(this.GetBytesVar given 2 false)).Buffer)
+            n.Get(0uL)
+        member this.GetInt32Var (given : int) : int32 =
+            let n = new Int32Array((new Uint8Array(this.GetBytesVar given 4 true)).Buffer)
+            int32 <| n.Get(0uL) // FIXME: remove convertion when WebSharper issue #118 is fixed
         member this.GetUInt32 () : uint32 =
             let r = view.GetUint32 (float64 offset, true)
             offset <- offset + 4u
             r
+        member this.GetUInt32Var (given : int) : uint32 =
+            let n = new Uint32Array((new Uint8Array(this.GetBytesVar given 4 false)).Buffer)
+            uint32 <| n.Get(0uL) // FIXME: remove convertion when WebSharper issue #118 is fixed
+        member this.GetFloatVar (given : int) : float32 = // TODO: spec says "zero-extended _to the right_". Is that bad?
+            let n = new Float32Array((new Uint8Array(this.GetBytesVar given 4 false)).Buffer)
+            n.Get(0uL)
+        member this.GetDoubleVar (given : int) : double = // TODO: see GetFloatVar
+            let n = new Float64Array((new Uint8Array(this.GetBytesVar given 8 false)).Buffer)
+            n.Get(0uL)
 
     [<JavaScript>]
     type DexFileArray (data : ArrayBuffer) =
