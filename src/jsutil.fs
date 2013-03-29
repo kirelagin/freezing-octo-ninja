@@ -13,18 +13,18 @@ module JsUtil =
         // JS are 64bit floating-point
         type float64 = int64
         [<Inline "$0">]
-        let inline float64 x = X<_>
+        let inline float64 x : float64 = X<_>
 
         [<Inline "$0 & 65535">]
-        let inline uint16 x = uint16 x
+        let inline uint16 x : uint16 = uint16 x
 
         [<Inline "$0 | 0">]
-        let inline int32 x = int32 x
+        let inline int32 x : int32 = int32 x
 
         // Don't forget to call this when working with bit-operations
         // even if you think you already got an unsigned int!
         [<Inline "($0 | 0) >>> 0">]
-        let inline uint32 x = uint32 x
+        let inline uint32 x : uint32 = uint32 x
 
     module Array =
         [<Inline "$arr.push($x)">]
