@@ -17,7 +17,7 @@ module Dex =
         member val Methods : Method array = [| |]
         member val Classes : Class array = [| |]
 
-        static member Read (bytes : Uint8Array) =
+        static member Read (bytes : ArrayBuffer) =
             let dexf = new DexFile ()
             let stream = FileArray.DexFileArray bytes
 
@@ -230,4 +230,4 @@ module Dex =
         (* TODO: annotations *)
         (* TODO: static values *)
         override this.ToString () =
-            "class " + dclass.ToString () 
+            "class " + dclass.ToString ()

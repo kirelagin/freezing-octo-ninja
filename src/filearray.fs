@@ -7,12 +7,33 @@ module FileArray =
     [<Inline "String.fromCharCode.apply(null, $bs)">]
     let charsToString (bs : int array) : string = X<_> // HACK: `System.Text.Encoding` is not working =(
 
-    [<JavaScript>]
-    type FileArray (data : Uint8Array) =
-        let mutable offset = 0u
+    [<Name [| "DataView" |]>]
+    [<Stub>]
+    type DataView (data : ArrayBuffer) =
+        [<Name "getInt8">]
+        member this.GetInt8(byteOffset : uint64) : int8 = X<_>
+        [<Name "getUint8">]
+        member this.GetUint8(byteOffset : uint64) : uint8 = X<_>
+        [<Name "getInt16">]
+        member this.GetInt16(byteOffset : uint64, littleEndian : bool) : int16 = X<_>
+        [<Name "getUint16">]
+        member this.GetUint16(byteOffset : uint64, littleEndian : bool) : uint16 = X<_>
+        [<Name "getInt32">]
+        member this.GetInt32(byteOffset : uint64, littleEndian : bool) : int32 = X<_>
+        [<Name "getUint32">]
+        member this.GetUint32(byteOffset : uint64, littleEndian : bool) : uint32 = X<_>
+        [<Name "getFloat32">]
+        member this.GetFloat32(byteOffset : uint64, littleEndian : bool) : float32 = X<_>
+        [<Name "getFloat64">]
+        member this.GetFloat64(byteOffset : uint64, littleEndian : bool) : double = X<_>
 
-        let getByte () =
-            let r = data.Get (uint64 offset)
+    [<JavaScript>]
+    type FileArray (data : ArrayBuffer) =
+        let mutable offset = 0u
+        let view = new DataView(data)
+
+        let getByte () : byte =
+            let r = view.GetUint8 (uint64 offset)
             offset <- offset + 1u
             r
         member this.GetBytes (count : int) : byte array =
@@ -26,14 +47,16 @@ module FileArray =
         member this.GetByte () : byte =
             getByte ()
         member this.GetUInt16 () : uint16 =
-            let d = this.GetBytes 2
-            (uint16 d.[1] * 256us) ||| (uint16 d.[0])
+            let r = view.GetUint16 (uint64 offset, true)
+            offset <- offset + 2u
+            r
         member this.GetUInt32 () : uint32 =
-            let d = this.GetBytes 4
-            (uint32 d.[3] * 0x1000000u) ||| (uint32 d.[2] * 0x10000u) ||| (uint32 d.[1] * 0x100u) ||| (uint32 d.[0])
+            let r = view.GetUint32 (uint64 offset, true)
+            offset <- offset + 4u
+            r
 
     [<JavaScript>]
-    type DexFileArray (data : Uint8Array) =
+    type DexFileArray (data : ArrayBuffer) =
         inherit FileArray(data)
 
         member private this.GetLeb128 (signed : bool) : int32 =

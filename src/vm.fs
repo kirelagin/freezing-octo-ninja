@@ -5,5 +5,5 @@ module VM =
     open IntelliFactory.WebSharper.Html5
 
     [<JavaScript>]
-    let start (bytes : Uint8Array) =
-        Dex.DexFileArray bytes
+    let start (bytes : ArrayBuffer) =
+        Dex.DexFile.Read bytes
