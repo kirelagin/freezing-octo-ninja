@@ -26,3 +26,44 @@ module JsUtil =
     module Array =
         [<Inline "$arr.push($x)">]
         let push (arr : 'a array) (x : 'a) : unit = X<_>
+
+    [<Name [| "gLong" |]>]
+    [<Stub>]
+    type GLong private () =
+        [<Name "fromBits">]
+        static member FromBits (lowBits : uint32, highBits : uint32) : GLong = X<_>
+
+        [<Name "getHighBits">]
+        member this.GetHighBits () : int32 = X<_>
+        [<Name "getLowBits">]
+        member this.GetLowBits () : int32 = X<_>
+        
+        [<Name "compare">]
+        member this.Compare (other : GLong) : int32 = X<_>
+
+        [<Name "negate">]
+        member this.Negate () : GLong  = X<_>
+
+        [<Name "add">]
+        member this.Add (other : GLong) : GLong  = X<_>
+        [<Name "subtract">]
+        member this.Subtract (other : GLong) : GLong  = X<_>
+        [<Name "multiply">]
+        member this.Multiply (other : GLong) : GLong  = X<_>
+        [<Name "div">]
+        member this.Div (other : GLong) : GLong  = X<_>
+        [<Name "modulo">]
+        member this.Modulo (other : GLong) : GLong  = X<_>
+
+        [<Name "and">]
+        member this.And (other : GLong) : GLong  = X<_>
+        [<Name "or">]
+        member this.Or (other : GLong) : GLong  = X<_>
+        [<Name "xor">]
+        member this.Xor (other : GLong) : GLong  = X<_>
+        [<Name "shiftLeft">]
+        member this.ShiftLeft (numBit : int32) : GLong  = X<_>
+        [<Name "shiftRight">]
+        member this.ShiftRight (numBit : int32) : GLong  = X<_>
+        [<Name "shiftRightUnsigned">]
+        member this.ShiftRightUnsigned (numBit : int32) : GLong  = X<_>
