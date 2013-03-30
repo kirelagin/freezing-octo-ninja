@@ -5,14 +5,21 @@ module ByteCode =
     open IntelliFactory.WebSharper.Html5
 
     // 4 bits
-    type nibble = int
+    type nibble = byte
+    [<JavaScript>]
+    let nibble (n : byte) : nibble = n &&& 0xFuy
 
-    type reg = uint32
+    type reg = float64
+    [<JavaScript>]
+    let reg n : reg = float64 n
 
 
     type Bias = | LtBias | GtBias
     type Test = | Eq | Ne | Lt | Ge | Gt | Le
     type InvokeKind = | InvokeVirtual | InvokeSuper | InvokeDirect | InvokeStatic | InvokeInterface
+    type CodeOffset<'a> =
+        | Unresolved of uint32 * 'a // (this instruction offset in 16bit units, relative offset in 16bit units)
+        | Resolved of uint32        // (target instruction's index in the instructions array)
 
     [<JavaScript>]
     type Instruction =
@@ -55,11 +62,11 @@ module ByteCode =
         (* 23 *)    | NewArray of reg * reg * int16
         (* 24 *)    (*| FilledNewArray of *)
         (* 25 *)    (*| FilledNewArrayRange of *)
-        (* 26 *)    | FillArrayData of reg * int32
+        (* 26 *)    | FillArrayData of reg * CodeOffset<int32>
 
         (* 27 *)    | Throw of reg
 
-        (* 28-2a *) | Goto of int32
+        (* 28-2a *) | Goto of CodeOffset<int32>
 
         (* 2b *)    (*| PackedSwitch of *)
         (* 2c *)    (*| SparseSwitch of *)
@@ -68,8 +75,8 @@ module ByteCode =
         (* 2f-30 *) | CmpDouble of Bias * reg * reg * reg
         (* 31 *)    | CmpLong of reg * reg * reg
 
-        (* 32-37 *) | If of Test * reg * reg * int16
-        (* 38-3d *) | IfZ of Test * reg * int16
+        (* 32-37 *) | If of Test * reg * reg * CodeOffset<int16>
+        (* 38-3d *) | IfZ of Test * reg * CodeOffset<int16>
 
         (* 44,
            46-4a *) | Aget of reg * reg * reg
@@ -150,9 +157,3 @@ module ByteCode =
                     | AndIntLit of reg * reg * int
                     | OrIntLit of reg * reg * int
         (* ...e2 *) | XorIntLit of reg * reg * int
-
-
-    [<JavaScript>]
-    let Read (stream : FileArray.DexFileArray) =
-        // TODO
-        [| |]

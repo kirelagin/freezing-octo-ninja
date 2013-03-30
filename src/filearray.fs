@@ -44,6 +44,7 @@ module FileArray =
             let old = offset
             offset <- newOffset
             old
+        member this.Offset = offset
 
         member this.GetBytesVar (given : int) (expected : int) (signExtend : bool) : byte array =
             let d = this.GetBytes given
@@ -52,6 +53,10 @@ module FileArray =
 
         member this.GetByte () : byte =
             getByte ()
+        member this.GetInt16 () : int16 =
+            let r = view.GetInt16 (float64 offset, true)
+            offset <- offset + 2u
+            r
         member this.GetInt16Var (given : int) : int16 =
             let n = new Int16Array((new Uint8Array(this.GetBytesVar given 2 true)).Buffer)
             n.Get(0uL)
@@ -62,6 +67,10 @@ module FileArray =
         member this.GetUInt16Var (given : int) : uint16 =
             let n = new Uint16Array((new Uint8Array(this.GetBytesVar given 2 false)).Buffer)
             n.Get(0uL)
+        member this.GetInt32 () : int32 =
+            let r = view.GetInt32 (float64 offset, true)
+            offset <- offset + 4u
+            r
         member this.GetInt32Var (given : int) : int32 =
             let n = new Int32Array((new Uint8Array(this.GetBytesVar given 4 true)).Buffer)
             int32 <| n.Get(0uL) // FIXME: remove convertion when WebSharper issue #118 is fixed

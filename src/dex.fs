@@ -3,6 +3,7 @@ namespace Dalvik
 module Dex =
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
+    open ByteCode
 
     // FS0452, so it's here. TODO: move elsewhere.
     [<JavaScript>]
@@ -149,7 +150,7 @@ module Dex =
                             let tries_size = stream.GetUInt16 ()
                             let debug_info_off = stream.GetUInt32 ()
                             let insns_size = stream.GetUInt32 ()
-                            meth.Insns <- ByteCode.Read stream
+                            meth.Insns <- DexFile.Read_instructions stream insns_size dexf
                             if tries_size <> 0us && insns_size % 2u <> 0u then
                                 stream.GetUInt16 () |> ignore
                             // TODO: read tries and handlers
@@ -213,7 +214,37 @@ module Dex =
                 | 0x1duy -> failwith "Annotations are not supported" // TODO: annotations
                 | 0x1Euy -> JsRef null
                 | 0x1Fuy -> JsNumber << float64 <| value_arg
-                | _ -> failwith <| "Unsupported encoded_value type" + value_type.ToString ()
+                | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()
+
+        static member private Read_instructions stream size dexf =
+            let result : Instruction array = [| |]
+            let offset = ref 0u
+
+            let readInstruction () =
+                let op = stream.GetByte ()
+                match op with
+                    | 0x00uy -> stream.GetByte () |> ignore
+                                Nop
+                    | 0x0Euy -> stream.GetByte () |> ignore
+                                ReturnVoid
+                    | 0x0Fuy -> Return (reg <| stream.GetByte)
+                    | 0x14uy -> Const (reg <| stream.GetByte (), stream.GetInt32 ())
+                    | 0x28uy -> Goto <| Unresolved (!offset, int32 <| stream.GetByte ())
+                    | 0x33uy -> let regs = stream.GetByte ()
+                                If (Ne, reg <| nibble regs, reg <| nibble (regs >>> 4), Unresolved (!offset, stream.GetInt16 ()))
+                    | 0x39uy -> IfZ (Ne, reg <| stream.GetByte (), Unresolved (!offset, stream.GetInt16 ()))
+                    | 0x70uy -> let ag = stream.GetByte ()
+                                let meth = stream.GetUInt16 ()
+                                let fe = stream.GetByte ()
+                                let dc = stream.GetByte ()
+                                Invoke (InvokeDirect, nibble <| ag >>> 4, meth, reg <| nibble dc, reg << nibble <| dc >>> 4, reg <| nibble fe, reg << nibble <| fe >>> 4, reg <| nibble ag)
+                    | _      -> failwith <| "Instruction not implemented " + op.ToString ()
+
+            while !offset < size do
+                let pos = stream.Offset
+                Array.push result <| readInstruction ()
+                offset := !offset + (stream.Offset - pos) / 2u
+            result
 
 
     and
@@ -249,7 +280,7 @@ module Dex =
         member val RegistersSize = 0us with get, set
         member val InsSize = 0us with get, set
         member val OutsSize = 0us with get, set
-        member val Insns : ByteCode.Instruction array = [| |] with get, set
+        member val Insns : Instruction array = [| |] with get, set
         override this.ToString () =
             name + " : " + proto.ToString()
     and
