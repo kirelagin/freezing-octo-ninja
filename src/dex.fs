@@ -228,6 +228,7 @@ module Dex =
                     | 0x0Euy -> stream.GetByte () |> ignore
                                 ReturnVoid
                     | 0x0Fuy -> Return (reg <| stream.GetByte ())
+                    | 0x10uy -> ReturnWide (reg <| stream.GetByte ())
                     | 0x14uy -> Const (reg <| stream.GetByte (), stream.GetInt32 ())
                     | 0x18uy -> ConstWide (reg <| stream.GetByte (), stream.GetInt64 ())
                     | 0x28uy -> Goto <| Unresolved (!offset, int32 <| stream.GetByte ())
