@@ -229,7 +229,9 @@ module Dex =
                                 ReturnVoid
                     | 0x0Fuy -> Return (reg <| stream.GetByte ())
                     | 0x14uy -> Const (reg <| stream.GetByte (), stream.GetInt32 ())
+                    | 0x18uy -> ConstWide (reg <| stream.GetByte (), stream.GetInt64 ())
                     | 0x28uy -> Goto <| Unresolved (!offset, int32 <| stream.GetByte ())
+                    | 0x21uy -> CmpLong (reg <| stream.GetByte (), reg <| stream.GetByte (), reg <| stream.GetByte ())
                     | 0x33uy -> let regs = stream.GetByte ()
                                 If (Ne, reg <| nibble regs, reg <| nibble (regs >>> 4), Unresolved (!offset, stream.GetInt16 ()))
                     | 0x39uy -> IfZ (Ne, reg <| stream.GetByte (), Unresolved (!offset, stream.GetInt16 ()))

@@ -44,7 +44,7 @@ module ByteCode =
         (* 15 *)    | ConstHigh16 of reg * int16
         (* 16 *)    | ConstWide16 of reg * int16
         (* 17 *)    | ConstWide32 of reg * int32
-        (* 18 *)    | ConstWide of reg * int64
+        (* 18 *)    | ConstWide of reg * (int32 * int32)
         (* 19 *)    | ConstWideHigh16 of reg * int16
         (* 1a *)    | ConstString of reg * uint16
         (* 1b *)    | ConstStringJumdo of reg * int32
