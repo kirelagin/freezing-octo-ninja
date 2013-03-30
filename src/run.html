@@ -3,10 +3,11 @@
     <head>
         <title>TEST</title>
 
-        <script src="../builder/Scripts/WebSharper.js" type="text/javascript"></script>
-        <script src="../builder/Scripts/IntelliFactory.WebSharper.dll.js" type="text/javascript"></script>
-        <script src="../builder/Scripts/IntelliFactory.WebSharper.Collections.dll.js" type="text/javascript"></script>
+        <script src="./WebSharper/WebSharper.js" type="text/javascript"></script>
+        <script src="./WebSharper/IntelliFactory.WebSharper.dll.js" type="text/javascript"></script>
+        <script src="./WebSharper/IntelliFactory.WebSharper.Collections.dll.js" type="text/javascript"></script>
 
+        <script src="./gLong.js" type="text/javascript"></script>
         <script src="./output.js" type="text/javascript"></script>
 
         <script type="text/javascript">
@@ -20,12 +21,12 @@
         <output id="list"></output>
 
         <script>
+            var f;
             function handleFileSelect(evt) {
                 var file = evt.target.files[0];
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    bytes = new Uint8Array(e.target.result);
-                    Dalvik.VM.start(bytes);
+                    f = Dalvik.VM.start(e.target.result);
                 }
                 reader.readAsArrayBuffer(file);
             }

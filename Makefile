@@ -8,7 +8,7 @@ WEBSHARPER_OPTS := $(shell cat builder/wsarg.txt)
 INPUT := src/jsutil.fs src/filearray.fs src/bytecode.fs src/dex.fs src/vm.fs
 
 
-build : build/output.js build/run.html
+build : build/output.js build/run.html build/gLong.js build/WebSharper/
 
 build/all.dll : $(INPUT)
 	fsharpc $(FSHARP_OPTS) -o:$@ $^
@@ -18,7 +18,13 @@ build/output.js : build/all.dll
 	rm /tmp/useless.dll
 
 build/run.html : src/run.html
-	cp $< $@
+	rsync -p $< $@
+
+build/gLong.js : vendor/gLong.js
+	rsync -p $< $@
+
+build/WebSharper/ : vendor/WebSharper/
+	rsync -pr $< $@
 
 .PHONY : clean
 clean :
