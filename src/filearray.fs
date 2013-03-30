@@ -72,6 +72,10 @@ module FileArray =
         member this.GetUInt32Var (given : int) : uint32 =
             let n = new Uint32Array((new Uint8Array(this.GetBytesVar given 4 false)).Buffer)
             uint32 <| n.Get(0uL) // FIXME: remove convertion when WebSharper issue #118 is fixed
+        member this.GetInt64Var (given : int) : int32 * int32 =
+            let n = new Int32Array((new Uint8Array(this.GetBytesVar given 8 true)).Buffer)
+            (int32 <| n.Get(0uL), int32 <| n.Get(1uL)) // FIXME: remove convertion when WebSharper issue #118 is fixed
+
         member this.GetFloatVar (given : int) : float32 = // TODO: spec says "zero-extended _to the right_". Is that bad?
             let n = new Float32Array((new Uint8Array(this.GetBytesVar given 4 false)).Buffer)
             n.Get(0uL)

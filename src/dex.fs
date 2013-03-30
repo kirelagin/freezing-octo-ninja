@@ -197,7 +197,7 @@ module Dex =
                 | 0x02uy -> JsNumber << float64 <| stream.GetInt16Var (int value_arg + 1)
                 | 0x03uy -> JsNumber << float64 <| stream.GetUInt16Var (int value_arg + 1)
                 | 0x04uy -> JsNumber << float64 <| stream.GetInt32Var (int value_arg + 1)
-                //| 0x06uy -> JsLong << float64 <| stream.GetInt32Var (int value_arg + 1)
+                | 0x06uy -> JsLong << GLong.FromBits <| stream.GetInt64Var (int value_arg + 1)
                 | 0x10uy -> JsNumber << float64 <| stream.GetFloatVar (int value_arg + 1)
                 | 0x11uy -> JsNumber << float64 <| stream.GetDoubleVar (int value_arg + 1)
                 | 0x17uy -> JsRef << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
@@ -261,5 +261,6 @@ module Dex =
         member this.SourceFile = source_file
         (* TODO: annotations *)
         (* TODO: static values *)
+        member this.StaticValues = static_values // FIXME: just for debugging. remove
         override this.ToString () =
             "class " + dclass.ToString ()

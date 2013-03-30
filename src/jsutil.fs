@@ -34,7 +34,7 @@ module JsUtil =
     [<Stub>]
     type GLong private () =
         [<Name "fromBits">]
-        static member FromBits (lowBits : uint32, highBits : uint32) : GLong = X<_>
+        static member FromBits (lowBits : int32, highBits : int32) : GLong = X<_>
 
         [<Name "getHighBits">]
         member this.GetHighBits () : int32 = X<_>
