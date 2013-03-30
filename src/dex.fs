@@ -162,8 +162,12 @@ module Dex =
                 encoded_methods virtual_methods_size virtual_methods
 
                 // Reading static values
-                stream.Seek static_values_off |> ignore
-                let static_values = DexFile.Read_encoded_array stream dexf
+                let static_values =
+                    if static_values_off <> 0u then
+                        stream.Seek static_values_off |> ignore
+                        DexFile.Read_encoded_array stream dexf
+                    else
+                        [| |]
 
                 Array.push dexf.Classes <| new Class(dexf.Types.[int32 class_idx], access_flags,
                                                     (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
@@ -209,7 +213,7 @@ module Dex =
                 | 0x1duy -> failwith "Annotations are not supported" // TODO: annotations
                 | 0x1Euy -> JsRef null
                 | 0x1Fuy -> JsNumber << float64 <| value_arg
-                | _ -> failwith "Unsupported encoded_value type"
+                | _ -> failwith <| "Unsupported encoded_value type" + value_type.ToString ()
 
 
     and
@@ -260,7 +264,6 @@ module Dex =
         member this.Interfaces = interfaces
         member this.SourceFile = source_file
         (* TODO: annotations *)
-        (* TODO: static values *)
-        member this.StaticValues = static_values // FIXME: just for debugging. remove
+        // TODO: static_values seems to be never used in the real world… hm-hm-hm…
         override this.ToString () =
             "class " + dclass.ToString ()
