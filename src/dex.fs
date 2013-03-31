@@ -225,21 +225,115 @@ module Dex =
                 match op with
                     | 0x00uy -> OpFormat.read10x stream
                                 Nop
+                    | 0x01uy
+                    | 0x07uy -> let (d, s) = OpFormat.read12x stream
+                                Move (reg d, reg s)
+                    | 0x02uy
+                    | 0x08uy -> let (d, s) = OpFormat.read22x stream
+                                Move (reg d, reg s)
+                    | 0x03uy
+                    | 0x09uy -> let (d, s) = OpFormat.read32x stream
+                                Move (reg d, reg s)
+                    | 0x04uy -> let (d, s) = OpFormat.read12x stream
+                                MoveWide (reg d, reg s)
+                    | 0x05uy -> let (d, s) = OpFormat.read22x stream
+                                MoveWide (reg d, reg s)
+                    | 0x06uy -> let (d, s) = OpFormat.read32x stream
+                                MoveWide (reg d, reg s)
+
+                    | 0x0Auy
+                    | 0x0Cuy -> MoveResult (reg <| OpFormat.read11x stream)
+                    | 0x0Buy -> MoveResultWide (reg <| OpFormat.read11x stream)
+                    | 0x0Duy -> MoveException (reg <| OpFormat.read11x stream)
+
                     | 0x0Euy -> OpFormat.read10x stream
                                 ReturnVoid
-                    | 0x0Fuy -> Return (reg <| OpFormat.read11x stream)
+                    | 0x0Fuy
+                    | 0x11uy -> Return (reg <| OpFormat.read11x stream)
                     | 0x10uy -> ReturnWide (reg <| OpFormat.read11x stream)
-                    | 0x14uy -> let (dest, v) = OpFormat.read31i stream
-                                Const (reg dest, v)
-                    | 0x18uy -> let (dest, v) = OpFormat.read51l stream
-                                ConstWide (reg dest, v)
+
+                    | 0x12uy -> let (d, v) = OpFormat.read11n stream
+                                Const4 (reg d, v)
+                    | 0x13uy -> let (d, v) = OpFormat.read21s stream
+                                Const16 (reg d, v)
+                    | 0x14uy -> let (d, v) = OpFormat.read31i stream
+                                Const (reg d, v)
+                    | 0x15uy -> let (d, v) = OpFormat.read21h stream
+                                ConstHigh16 (reg d, v)
+                    | 0x16uy -> let (d, v) = OpFormat.read21s stream
+                                ConstWide16 (reg d, v)
+                    | 0x17uy -> let (d, v) = OpFormat.read31i stream
+                                ConstWide32 (reg d, v)
+                    | 0x18uy -> let (d, v) = OpFormat.read51l stream
+                                ConstWide (reg d, v)
+                    | 0x19uy -> let (d, v) = OpFormat.read21h stream
+                                ConstWideHigh16 (reg d, v)
+                    | 0x1Auy -> let (d, v) = OpFormat.read21c stream
+                                ConstString (reg d, v)
+                    | 0x1Buy -> let (d, v) = OpFormat.read31c stream
+                                ConstStringJumdo (reg d, v)
+                    | 0x1Cuy -> let (d, v) = OpFormat.read21c stream
+                                ConstClass (reg d, v)
+
+                    | 0x1Duy -> MonitorEnter (reg <| OpFormat.read11x stream)
+                    | 0x1Euy -> MonitorExit (reg <| OpFormat.read11x stream)
+
+                    | 0x1Fuy -> let (d, t) = OpFormat.read21c stream
+                                CheckCast (reg d, t)
+                    | 0x20uy -> let (d, r, t) = OpFormat.read22c stream
+                                InstanceOf (reg d, reg r, t)
+                    | 0x21uy -> let (d, r) = OpFormat.read12x stream
+                                ArrayLength (reg d, reg r)
+                    | 0x22uy -> let (d, t) = OpFormat.read21c stream
+                                NewInstance (reg d, t)
+                    | 0x23uy -> let (d, s, t) = OpFormat.read22c stream
+                                NewArray (reg d, reg s, t)
+                    (*| 0x24uy -> *) // TODO: 35c
+                    (*| 0x25uy -> *) // TODO: 35rc
+                    (*| 0x26uy -> let (r, b) = OpFormat.read31t stream
+                                FillArrayData (reg r, Unresolved (!offset, b)) *) // TODO: fill-array-data
+
+                    | 0x27uy -> Throw (reg <| OpFormat.read11x stream)
                     | 0x28uy -> Goto (Unresolved (!offset, int32 <| OpFormat.read10t stream))
+                    | 0x29uy -> Goto (Unresolved (!offset, int32 <| OpFormat.read20t stream))
+                    | 0x2Auy -> Goto (Unresolved (!offset, int32 <| OpFormat.read30t stream))
+                    (*| 0x2Buy -> *) // TODO: packed-switch
+                    (*| 0x2Cuy -> *) // TODO: sparse switch
+
+                    | 0x2Duy
+                    | 0x2Fuy -> let (d, f, s) = OpFormat.read23x stream
+                                CmpFloat (LtBias, (reg d, reg f, reg s))
+                    | 0x2Euy
+                    | 0x30uy -> let (d, f, s) = OpFormat.read23x stream
+                                CmpFloat (GtBias, (reg d, reg f, reg s))
                     | 0x31uy -> let (dest, f, s) = OpFormat.read23x stream
                                 CmpLong (reg dest, reg f, reg s)
+
+                    | 0x32uy -> let (f, s, branch) = OpFormat.read22t stream
+                                If (Eq, (reg f, reg s, Unresolved (!offset, branch)))
                     | 0x33uy -> let (f, s, branch) = OpFormat.read22t stream
                                 If (Ne, (reg f, reg s, Unresolved (!offset, branch)))
+                    | 0x34uy -> let (f, s, branch) = OpFormat.read22t stream
+                                If (Lt, (reg f, reg s, Unresolved (!offset, branch)))
+                    | 0x35uy -> let (f, s, branch) = OpFormat.read22t stream
+                                If (Ge, (reg f, reg s, Unresolved (!offset, branch)))
+                    | 0x36uy -> let (f, s, branch) = OpFormat.read22t stream
+                                If (Gt, (reg f, reg s, Unresolved (!offset, branch)))
+                    | 0x37uy -> let (f, s, branch) = OpFormat.read22t stream
+                                If (Le, (reg f, reg s, Unresolved (!offset, branch)))
+                    | 0x38uy -> let (f, branch) = OpFormat.read21t stream
+                                IfZ (Eq, (reg f, Unresolved (!offset, branch)))
                     | 0x39uy -> let (f, branch) = OpFormat.read21t stream
                                 IfZ (Ne, (reg f, Unresolved (!offset, branch)))
+                    | 0x3Auy -> let (f, branch) = OpFormat.read21t stream
+                                IfZ (Lt, (reg f, Unresolved (!offset, branch)))
+                    | 0x3Buy -> let (f, branch) = OpFormat.read21t stream
+                                IfZ (Ge, (reg f, Unresolved (!offset, branch)))
+                    | 0x3Cuy -> let (f, branch) = OpFormat.read21t stream
+                                IfZ (Gt, (reg f, Unresolved (!offset, branch)))
+                    | 0x3Duy -> let (f, branch) = OpFormat.read21t stream
+                                IfZ (Le, (reg f, Unresolved (!offset, branch)))
+
                     | 0x70uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
                                 Invoke (InvokeDirect, (count, meth, reg c, reg d, reg e, reg f, reg g))
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()

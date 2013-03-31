@@ -51,32 +51,27 @@ module ByteCode =
         (* 18 *)    | ConstWide of reg * (int32 * int32)
         (* 19 *)    | ConstWideHigh16 of reg * int16
         (* 1a *)    | ConstString of reg * uint16
-        (* 1b *)    | ConstStringJumdo of reg * int32
-        (* 1c *)    | ConstClass of reg * int16
+        (* 1b *)    | ConstStringJumdo of reg * uint32
+        (* 1c *)    | ConstClass of reg * uint16
 
         (* 1d *)    | MonitorEnter of reg
         (* 1e *)    | MonitorExit of reg
 
-        (* 1f *)    | CheckCast of reg * int16
-        (* 20 *)    | InstanceOf of reg * reg * int16
-
+        (* 1f *)    | CheckCast of reg * uint16
+        (* 20 *)    | InstanceOf of reg * reg * uint16
         (* 21 *)    | ArrayLength of reg * reg
-
-        (* 22 *)    | NewInstance of reg * int16
-        (* 23 *)    | NewArray of reg * reg * int16
+        (* 22 *)    | NewInstance of reg * uint16
+        (* 23 *)    | NewArray of reg * reg * uint16
         (* 24 *)    (*| FilledNewArray of *)
         (* 25 *)    (*| FilledNewArrayRange of *)
-        (* 26 *)    | FillArrayData of reg * CodeOffset<int32>
+        (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *)
 
         (* 27 *)    | Throw of reg
-
         (* 28-2a *) | Goto of CodeOffset<int32>
-
         (* 2b *)    (*| PackedSwitch of *)
         (* 2c *)    (*| SparseSwitch of *)
 
-        (* 2d-2e *) | CmpFloat of Bias * reg * reg * reg
-        (* 2f-30 *) | CmpDouble of Bias * reg * reg * reg
+        (* 2d-30 *) | CmpFloat of Bias * (reg * reg * reg)
         (* 31 *)    | CmpLong of reg * reg * reg
 
         (* 32-37 *) | If of Test * (reg * reg * CodeOffset<int16>)
