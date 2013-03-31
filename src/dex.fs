@@ -7,7 +7,7 @@ module Dex =
 
     // FS0452, so it's here. TODO: move elsewhere.
     [<JavaScript>]
-    let NO_INDEX = 0xffffffffu
+    let NO_INDEX = 0xFFFFFFFFu
 
     [<JavaScript>]
     type DexFile [<JavaScript>] private () =
@@ -22,7 +22,7 @@ module Dex =
             let dexf = new DexFile ()
             let stream = FileArray.DexFileArray bytes
 
-            let DEX_FILE_MAGIC = [| 0x64uy; 0x65uy; 0x78uy; 0x0auy; 0x30uy; 0x33uy; 0x35uy; 0x00uy; |]
+            let DEX_FILE_MAGIC = [| 0x64uy; 0x65uy; 0x78uy; 0x0Auy; 0x30uy; 0x33uy; 0x35uy; 0x00uy; |]
             let ENDIAN_CONSTANT = 0x12345678u
 
             // Reading header
@@ -195,7 +195,7 @@ module Dex =
 
         static member private Read_encoded_value stream dexf =
             let value_tag = stream.GetByte ()
-            let value_arg = (value_tag >>> 5) &&& 0x7uy
+            let value_arg = (value_tag >>> 5) &&& 0x07uy
             let value_type = value_tag &&& 0x1Fuy
             match value_type with
                 | 0x00uy -> JsNumber << float64 <| stream.GetByte ()
@@ -211,7 +211,7 @@ module Dex =
                 | 0x1Auy -> JsRef << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
                 | 0x1Buy -> JsRef << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
                 | 0x1Cuy -> JsRef << As<obj> <| DexFile.Read_encoded_array stream dexf
-                | 0x1duy -> failwith "Annotations are not supported" // TODO: annotations
+                | 0x1Duy -> failwith "Annotations are not supported" // TODO: annotations
                 | 0x1Euy -> JsRef null
                 | 0x1Fuy -> JsNumber << float64 <| value_arg
                 | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()

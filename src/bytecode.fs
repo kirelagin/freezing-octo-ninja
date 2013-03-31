@@ -11,7 +11,7 @@ module ByteCode =
     // Unsigned 4 bitw
     type unibble = byte
     [<JavaScript>]
-    let unibble (n : byte) : unibble = n &&& 0xFuy
+    let unibble (n : byte) : unibble = n &&& 0x0Fuy
 
     type reg = float64
     [<JavaScript>]

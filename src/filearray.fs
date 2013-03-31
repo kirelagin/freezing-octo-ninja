@@ -110,7 +110,7 @@ module FileArray =
             let mutable stop = false
             while not stop do
                 let cur = int <| this.GetByte ()
-                result <- result ||| ((cur &&& 0x7f) <<< (count * 7))
+                result <- result ||| ((cur &&& 0x7F) <<< (count * 7))
                 signBits <- signBits <<< 7
                 count <- count + 1
                 if (cur &&& 0x80) = 0 then
@@ -132,15 +132,15 @@ module FileArray =
                 else
                     if a < 0x80 then
                         Array.push out a
-                    else if (a &&& 0xe0) = 0xc0 then
+                    else if (a &&& 0xE0) = 0xC0 then
                         let b = int <| this.GetByte ()
-                        if ((b &&& 0xc0) <> 0x80) then failwith "MUTF-8: Bad second byte"
-                        Array.push out (((a &&& 0x1f) <<< 6) ||| (b &&& 0x3f))
-                    else if (a &&& 0xf0) = 0xe0 then
+                        if ((b &&& 0xC0) <> 0x80) then failwith "MUTF-8: Bad second byte"
+                        Array.push out (((a &&& 0x1F) <<< 6) ||| (b &&& 0x3F))
+                    else if (a &&& 0xF0) = 0xE0 then
                         let b = int <| this.GetByte ()
                         let c = int <| this.GetByte ()
-                        if ((b &&& 0xc0) <> 0x80) || ((c &&& 0xc0) <> 0x80) then failwith "MUTF-8: Bad second or third byte"
-                        Array.push out (((a &&& 0x0f) <<< 12) ||| ((b &&& 0x3f) <<< 6) ||| (c &&& 0x3f))
+                        if ((b &&& 0xC0) <> 0x80) || ((c &&& 0xC0) <> 0x80) then failwith "MUTF-8: Bad second or third byte"
+                        Array.push out (((a &&& 0x0F) <<< 12) ||| ((b &&& 0x3F) <<< 6) ||| (c &&& 0x3F))
                     else
                         failwith "MUTF-8: Bad byte"
             charsToString out
