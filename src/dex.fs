@@ -196,7 +196,7 @@ module Dex =
         static member private Read_encoded_value stream dexf =
             let value_tag = stream.GetByte ()
             let value_arg = (value_tag >>> 5) &&& 0x7uy
-            let value_type = value_tag &&& 0x1uy
+            let value_type = value_tag &&& 0x1Fuy
             match value_type with
                 | 0x00uy -> JsNumber << float64 <| stream.GetByte ()
                 | 0x02uy -> JsNumber << float64 <| stream.GetInt16Var (int value_arg + 1)
