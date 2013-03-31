@@ -334,8 +334,75 @@ module Dex =
                     | 0x3Duy -> let (f, branch) = OpFormat.read21t stream
                                 IfZ (Le, (reg f, Unresolved (!offset, branch)))
 
+                    | 0x44uy
+                    | 0x46uy
+                    | 0x47uy
+                    | 0x48uy
+                    | 0x49uy
+                    | 0x4Auy -> let (v, r, i) = OpFormat.read23x stream
+                                Aget (reg v, reg r, reg i)
+                    | 0x45uy -> let (v, r, i) = OpFormat.read23x stream
+                                AgetWide (reg v, reg r, reg i)
+                    | 0x4Buy
+                    | 0x4Duy
+                    | 0x4Euy
+                    | 0x4Fuy
+                    | 0x50uy
+                    | 0x51uy -> let (v, r, i) = OpFormat.read23x stream
+                                Aput (reg v, reg r, reg i)
+                    | 0x4Cuy -> let (v, r, i) = OpFormat.read23x stream
+                                AputWide (reg v, reg r, reg i)
+
+                    | 0x52uy
+                    | 0x54uy
+                    | 0x55uy
+                    | 0x56uy
+                    | 0x57uy
+                    | 0x58uy -> let (v, r, f) = OpFormat.read22c stream
+                                Iget (reg v, reg r, f)
+                    | 0x53uy -> let (v, r, f) = OpFormat.read22c stream
+                                IgetWide (reg v, reg r, f)
+                    | 0x59uy
+                    | 0x5Buy
+                    | 0x5Cuy
+                    | 0x5Duy
+                    | 0x5Euy
+                    | 0x5Fuy -> let (v, r, f) = OpFormat.read22c stream
+                                Iput (reg v, reg r, f)
+                    | 0x5Auy -> let (v, r, f) = OpFormat.read22c stream
+                                IputWide (reg v, reg r, f)
+
+                    | 0x60uy
+                    | 0x62uy
+                    | 0x63uy
+                    | 0x64uy
+                    | 0x65uy
+                    | 0x66uy -> let (v, f) = OpFormat.read21c stream
+                                Sget (reg v, f)
+                    | 0x61uy -> let (v, f) = OpFormat.read21c stream
+                                SgetWide (reg v, f)
+                    | 0x67uy
+                    | 0x69uy
+                    | 0x6Auy
+                    | 0x6Buy
+                    | 0x6Cuy
+                    | 0x6Duy -> let (v, f) = OpFormat.read21c stream
+                                Sput (reg v, f)
+                    | 0x68uy -> let (v, f) = OpFormat.read21c stream
+                                SputWide (reg v, f)
+
+                    | 0x6Euy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
+                                Invoke (InvokeVirtual, (count, meth, reg c, reg d, reg e, reg f, reg g))
+                    | 0x6Fuy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
+                                Invoke (InvokeSuper, (count, meth, reg c, reg d, reg e, reg f, reg g))
                     | 0x70uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
                                 Invoke (InvokeDirect, (count, meth, reg c, reg d, reg e, reg f, reg g))
+                    | 0x71uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
+                                Invoke (InvokeStatic, (count, meth, reg c, reg d, reg e, reg f, reg g))
+                    | 0x72uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
+                                Invoke (InvokeInterface, (count, meth, reg c, reg d, reg e, reg f, reg g))
+                    (*0x74uy -> *) // TODO: 3rc
+
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()
 
             while !offset < size do
