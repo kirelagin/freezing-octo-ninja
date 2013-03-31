@@ -5,9 +5,13 @@ module ByteCode =
     open IntelliFactory.WebSharper.Html5
 
     // 4 bits
-    type nibble = byte
+    type nibble = sbyte
+    [<Inline "(new Int8Array([n << 4]))[0] >> 4">]
+    let nibble (n : byte) : nibble = X<_>
+    // Unsigned 4 bitw
+    type unibble = byte
     [<JavaScript>]
-    let nibble (n : byte) : nibble = n &&& 0xFuy
+    let unibble (n : byte) : unibble = n &&& 0xFuy
 
     type reg = float64
     [<JavaScript>]
@@ -75,8 +79,8 @@ module ByteCode =
         (* 2f-30 *) | CmpDouble of Bias * reg * reg * reg
         (* 31 *)    | CmpLong of reg * reg * reg
 
-        (* 32-37 *) | If of Test * reg * reg * CodeOffset<int16>
-        (* 38-3d *) | IfZ of Test * reg * CodeOffset<int16>
+        (* 32-37 *) | If of Test * (reg * reg * CodeOffset<int16>)
+        (* 38-3d *) | IfZ of Test * (reg * CodeOffset<int16>)
 
         (* 44,
            46-4a *) | Aget of reg * reg * reg
@@ -99,7 +103,7 @@ module ByteCode =
            69-6d *) | Sput of reg * uint16
         (* 68 *)    | SputWide of reg * uint16
 
-        (* 6e-72 *) | Invoke of InvokeKind * nibble * uint16 * reg * reg * reg * reg * reg
+        (* 6e-72 *) | Invoke of InvokeKind * (unibble * uint16 * reg * reg * reg * reg * reg)
         (* 74-78 *) (*| InvokeRange of InvokeKind * uint8 * uint16 * reg *)
 
         (* 7b... *) | NegInt of reg * reg
@@ -157,3 +161,76 @@ module ByteCode =
                     | AndIntLit of reg * reg * int
                     | OrIntLit of reg * reg * int
         (* ...e2 *) | XorIntLit of reg * reg * int
+
+
+    [<JavaScript>]
+    module OpFormat =
+        let read10x (stream : FileArray.DexFileArray) : unit =
+            stream.GetByte () |> ignore
+
+        let read12x (stream : FileArray.DexFileArray) : nibble * nibble =
+            let ba = stream.GetByte ()
+            (nibble <| ba, nibble <| ba >>> 4)
+        let read11n (stream : FileArray.DexFileArray) : nibble * nibble =
+            let ba = stream.GetByte ()
+            (nibble <| ba, nibble <| ba >>> 4)
+
+        let read11x (stream : FileArray.DexFileArray) : uint8 =
+            stream.GetByte ()
+        let read10t (stream : FileArray.DexFileArray) : int8 =
+            stream.GetInt8 ()
+
+        let read20t (stream : FileArray.DexFileArray) : int16 =
+            stream.GetByte () |> ignore
+            stream.GetInt16 ()
+
+        let read22x (stream : FileArray.DexFileArray) : uint8 * uint16 =
+            (stream.GetByte (), stream.GetUInt16 ())
+        let read21t (stream : FileArray.DexFileArray) : uint8 * int16 =
+            (stream.GetByte (), stream.GetInt16 ())
+        let read21s (stream : FileArray.DexFileArray) : uint8 * int16 =
+            (stream.GetByte (), stream.GetInt16 ())
+        let read21h (stream : FileArray.DexFileArray) : uint8 * int16 =
+            (stream.GetByte (), stream.GetInt16 ())
+        let read21c (stream : FileArray.DexFileArray) : uint8 * uint16 =
+            (stream.GetByte (), stream.GetUInt16 ())
+
+        let read23x (stream : FileArray.DexFileArray) : uint8 * uint8 * byte =
+            (stream.GetByte (), stream.GetByte (), stream.GetByte ())
+        let read22b (stream : FileArray.DexFileArray) : uint8  * uint8 * int8 =
+            (stream.GetByte (), stream.GetByte (), stream.GetInt8 ())
+
+        let read22t (stream : FileArray.DexFileArray) : unibble  * unibble * int16 =
+            let ba = stream.GetByte ()
+            (unibble <| ba, unibble <| ba >>> 4, stream.GetInt16 ())
+        let read22s (stream : FileArray.DexFileArray) : unibble  * unibble * int16 =
+            let ba = stream.GetByte ()
+            (unibble <| ba, unibble <| ba >>> 4, stream.GetInt16 ())
+        let read22c (stream : FileArray.DexFileArray) : unibble  * unibble * uint16 =
+            let ba = stream.GetByte ()
+            (unibble <| ba, unibble <| ba >>> 4, stream.GetUInt16 ())
+
+        let read30t (stream : FileArray.DexFileArray) : int32 =
+            stream.GetInt32 ()
+
+        let read32x (stream : FileArray.DexFileArray) : uint16 * uint16 =
+            (stream.GetUInt16 (), stream.GetUInt16 ())
+
+        let read31i (stream : FileArray.DexFileArray) : uint8 * int32 =
+            (stream.GetByte (), stream.GetInt32 ())
+        let read31t (stream : FileArray.DexFileArray) : uint8 * int32 =
+            (stream.GetByte (), stream.GetInt32 ())
+        let read31c (stream : FileArray.DexFileArray) : uint8 * uint32 =
+            (stream.GetByte (), stream.GetUInt32 ())
+
+        let read35c (stream : FileArray.DexFileArray) : unibble * uint16 * unibble * unibble * unibble * unibble * unibble =
+            let ag = stream.GetByte ()
+            let meth = stream.GetUInt16 ()
+            let fe = stream.GetByte ()
+            let dc = stream.GetByte ()
+            (unibble <| ag >>> 4, meth, unibble dc, unibble <| dc >>> 4, unibble fe, unibble <| fe >>> 4, unibble ag)
+
+        //let read3rc // TODO: opformat 3rc
+
+        let read51l (stream : FileArray.DexFileArray) : uint8 * (int32 * int32) =
+            (stream.GetByte (), stream.GetInt64 ())

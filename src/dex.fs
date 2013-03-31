@@ -223,24 +223,25 @@ module Dex =
             let readInstruction () =
                 let op = stream.GetByte ()
                 match op with
-                    | 0x00uy -> stream.GetByte () |> ignore
+                    | 0x00uy -> OpFormat.read10x stream
                                 Nop
-                    | 0x0Euy -> stream.GetByte () |> ignore
+                    | 0x0Euy -> OpFormat.read10x stream
                                 ReturnVoid
-                    | 0x0Fuy -> Return (reg <| stream.GetByte ())
-                    | 0x10uy -> ReturnWide (reg <| stream.GetByte ())
-                    | 0x14uy -> Const (reg <| stream.GetByte (), stream.GetInt32 ())
-                    | 0x18uy -> ConstWide (reg <| stream.GetByte (), stream.GetInt64 ())
-                    | 0x28uy -> Goto <| Unresolved (!offset, int32 <| stream.GetByte ())
-                    | 0x31uy -> CmpLong (reg <| stream.GetByte (), reg <| stream.GetByte (), reg <| stream.GetByte ())
-                    | 0x33uy -> let regs = stream.GetByte ()
-                                If (Ne, reg <| nibble regs, reg <| nibble (regs >>> 4), Unresolved (!offset, stream.GetInt16 ()))
-                    | 0x39uy -> IfZ (Ne, reg <| stream.GetByte (), Unresolved (!offset, stream.GetInt16 ()))
-                    | 0x70uy -> let ag = stream.GetByte ()
-                                let meth = stream.GetUInt16 ()
-                                let fe = stream.GetByte ()
-                                let dc = stream.GetByte ()
-                                Invoke (InvokeDirect, nibble <| ag >>> 4, meth, reg <| nibble dc, reg << nibble <| dc >>> 4, reg <| nibble fe, reg << nibble <| fe >>> 4, reg <| nibble ag)
+                    | 0x0Fuy -> Return (reg <| OpFormat.read11x stream)
+                    | 0x10uy -> ReturnWide (reg <| OpFormat.read11x stream)
+                    | 0x14uy -> let (dest, v) = OpFormat.read31i stream
+                                Const (reg dest, v)
+                    | 0x18uy -> let (dest, v) = OpFormat.read51l stream
+                                ConstWide (reg dest, v)
+                    | 0x28uy -> Goto (Unresolved (!offset, int32 <| OpFormat.read10t stream))
+                    | 0x31uy -> let (dest, f, s) = OpFormat.read23x stream
+                                CmpLong (reg dest, reg f, reg s)
+                    | 0x33uy -> let (f, s, branch) = OpFormat.read22t stream
+                                If (Ne, (reg f, reg s, Unresolved (!offset, branch)))
+                    | 0x39uy -> let (f, branch) = OpFormat.read21t stream
+                                IfZ (Ne, (reg f, Unresolved (!offset, branch)))
+                    | 0x70uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
+                                Invoke (InvokeDirect, (count, meth, reg c, reg d, reg e, reg f, reg g))
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()
 
             while !offset < size do

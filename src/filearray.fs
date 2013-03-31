@@ -53,6 +53,10 @@ module FileArray =
 
         member this.GetByte () : byte =
             getByte ()
+        member this.GetInt8 () : int8 =
+            let r = view.GetInt8 (float64 offset)
+            offset <- offset + 1u
+            r
         member this.GetInt16 () : int16 =
             let r = view.GetInt16 (float64 offset, true)
             offset <- offset + 2u
