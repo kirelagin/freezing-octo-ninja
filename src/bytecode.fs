@@ -71,7 +71,8 @@ module ByteCode =
         (* 2b *)    (*| PackedSwitch of *)
         (* 2c *)    (*| SparseSwitch of *)
 
-        (* 2d-30 *) | CmpFloat of Bias * (reg * reg * reg)
+        (* 2d-2e *) | CmpFloat of Bias * (reg * reg * reg)
+        (* 2f-30 *) | CmpDouble of Bias * (reg * reg * reg)
         (* 31 *)    | CmpLong of reg * reg * reg
 
         (* 32-37 *) | If of Test * (reg * reg * CodeOffset<int16>)
@@ -106,9 +107,7 @@ module ByteCode =
                     | NegLong of reg * reg
                     | NotLong of reg * reg
                     | NegFloat of reg * reg
-                    | NotFloat of reg * reg
                     | NegDouble of reg * reg
-                    | NotDouble of reg * reg
                     | IntToLong of reg * reg
                     | IntToFloat of reg * reg
                     | IntToDouble of reg * reg
@@ -125,16 +124,26 @@ module ByteCode =
                     | IntToChar of reg * reg
         (* ...8f *) | IntToShort of reg * reg
 
-        (* 90... *) | Add of reg * reg * reg (* for int, float and double... *)
-                    | Sub of reg * reg * reg
-                    | Mul of reg * reg * reg
-                    | Div of reg * reg * reg
-                    | Rem of reg * reg * reg (* ... done. *)
+        (* 90... *) | AddInt of reg * reg * reg
+                    | SubInt of reg * reg * reg
+                    | MulInt of reg * reg * reg
+                    | DivInt of reg * reg * reg
+                    | RemInt of reg * reg * reg
                     | AddLong of reg * reg * reg
                     | SubLong of reg * reg *reg
                     | MulLong of reg * reg * reg
                     | DivLong of reg * reg * reg
                     | RemLong of reg * reg * reg
+                    | AddFloat of reg * reg * reg
+                    | SubFloat of reg * reg * reg
+                    | MulFloat of reg * reg * reg
+                    | DivFloat of reg * reg * reg
+                    | RemFloat of reg * reg * reg
+                    | AddDouble of reg * reg * reg
+                    | SubDouble of reg * reg * reg
+                    | MulDouble of reg * reg * reg
+                    | DivDouble of reg * reg * reg
+                    | RemDouble of reg * reg * reg
                     | AndInt of reg * reg * reg
                     | OrInt of reg * reg * reg
                     | XorInt of reg * reg * reg
@@ -148,14 +157,14 @@ module ByteCode =
                     | ShrLong of reg * reg * reg
         (* ...cf *) | UshrLong of reg * reg * reg
 
-        (* d0... *) | AddIntLit of reg * reg * int
-                    | RsubInt of reg * reg * int
-                    | MulIntLit of reg * reg * int
-                    | DivIntLit of reg * reg * int
-                    | RemIntLit of reg * reg * int
-                    | AndIntLit of reg * reg * int
-                    | OrIntLit of reg * reg * int
-        (* ...e2 *) | XorIntLit of reg * reg * int
+        (* d0... *) | AddIntLit of reg * reg * int32
+                    | RsubInt of reg * reg * int32
+                    | MulIntLit of reg * reg * int32
+                    | DivIntLit of reg * reg * int32
+                    | RemIntLit of reg * reg * int32
+                    | AndIntLit of reg * reg * int32
+                    | OrIntLit of reg * reg * int32
+        (* ...e2 *) | XorIntLit of reg * reg * int32
 
 
     [<JavaScript>]

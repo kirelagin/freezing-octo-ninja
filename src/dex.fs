@@ -300,12 +300,14 @@ module Dex =
                     (*| 0x2Buy -> *) // TODO: packed-switch
                     (*| 0x2Cuy -> *) // TODO: sparse switch
 
-                    | 0x2Duy
-                    | 0x2Fuy -> let (d, f, s) = OpFormat.read23x stream
+                    | 0x2Duy -> let (d, f, s) = OpFormat.read23x stream
                                 CmpFloat (LtBias, (reg d, reg f, reg s))
-                    | 0x2Euy
-                    | 0x30uy -> let (d, f, s) = OpFormat.read23x stream
+                    | 0x2Euy -> let (d, f, s) = OpFormat.read23x stream
                                 CmpFloat (GtBias, (reg d, reg f, reg s))
+                    | 0x2Fuy -> let (d, f, s) = OpFormat.read23x stream
+                                CmpDouble (LtBias, (reg d, reg f, reg s))
+                    | 0x30uy -> let (d, f, s) = OpFormat.read23x stream
+                                CmpDouble (GtBias, (reg d, reg f, reg s))
                     | 0x31uy -> let (dest, f, s) = OpFormat.read23x stream
                                 CmpLong (reg dest, reg f, reg s)
 
