@@ -21,9 +21,9 @@ module ByteCode =
     type Bias = | LtBias | GtBias
     type Test = | Eq | Ne | Lt | Ge | Gt | Le
     type InvokeKind = | InvokeVirtual | InvokeSuper | InvokeDirect | InvokeStatic | InvokeInterface
-    type CodeOffset<'a> =
-        | Unresolved of uint32 * 'a // (this instruction offset in 16bit units, relative offset in 16bit units)
-        | Resolved of uint32        // (target instruction's index in the instructions array)
+    type CodeOffset =
+        | RelativeBytes of int32    // (relative offset in 16bit units)
+        | AbsoluteIndex of int32    // (target instruction's index in the instructions array)
 
     [<JavaScript>]
     type Instruction =
@@ -67,7 +67,7 @@ module ByteCode =
         (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *)
 
         (* 27 *)    | Throw of reg
-        (* 28-2a *) | Goto of CodeOffset<int32>
+        (* 28-2a *) | Goto of CodeOffset
         (* 2b *)    (*| PackedSwitch of *)
         (* 2c *)    (*| SparseSwitch of *)
 
@@ -75,8 +75,8 @@ module ByteCode =
         (* 2f-30 *) | CmpDouble of Bias * (reg * reg * reg)
         (* 31 *)    | CmpLong of reg * reg * reg
 
-        (* 32-37 *) | If of Test * (reg * reg * CodeOffset<int16>)
-        (* 38-3d *) | IfZ of Test * (reg * CodeOffset<int16>)
+        (* 32-37 *) | If of Test * (reg * reg * CodeOffset)
+        (* 38-3d *) | IfZ of Test * (reg * CodeOffset)
 
         (* 44,
            46-4a *) | Aget of reg * reg * reg
@@ -240,9 +240,5 @@ module ByteCode =
             (reg <| stream.GetByte (), stream.GetInt64 ())
 
 
-    [<JavaScript>]
-    let convert3unresolved offset = Arrows.thirdOf3 <| curry Unresolved !offset
-    [<JavaScript>]
-    let convert2unresolved offset = Arrows.secondOf2 <| curry Unresolved !offset
     [<JavaScript>]
     let convert2addr (df, s) = (df, df, s)

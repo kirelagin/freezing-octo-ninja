@@ -217,7 +217,7 @@ module Dex =
                 | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()
 
         static member private Read_instructions stream size dexf =
-            let result : Instruction array = [| |]
+            let result : (uint32 * Instruction) array = [| |]
             let offset = ref 0u
 
             let readInstruction () =
@@ -270,9 +270,9 @@ module Dex =
                                 FillArrayData (reg r, Unresolved (!offset, b)) *) // TODO: fill-array-data
 
                     | 0x27uy -> Throw << OpFormat.read11x
-                    | 0x28uy -> Goto << (curry Unresolved !offset) << int32 << OpFormat.read10t
-                    | 0x29uy -> Goto << (curry Unresolved !offset) << int32 << OpFormat.read20t
-                    | 0x2Auy -> Goto << (curry Unresolved !offset) << int32 << OpFormat.read30t
+                    | 0x28uy -> Goto << RelativeBytes << int32 << OpFormat.read10t
+                    | 0x29uy -> Goto << RelativeBytes << int32 << OpFormat.read20t
+                    | 0x2Auy -> Goto << RelativeBytes << int32 << OpFormat.read30t
                     (*| 0x2Buy -> *) // TODO: packed-switch
                     (*| 0x2Cuy -> *) // TODO: sparse switch
 
@@ -282,18 +282,18 @@ module Dex =
                     | 0x30uy -> curry CmpDouble GtBias << OpFormat.read23x
                     | 0x31uy -> CmpLong << OpFormat.read23x
 
-                    | 0x32uy -> curry If Eq << convert3unresolved offset << OpFormat.read22t
-                    | 0x33uy -> curry If Ne << convert3unresolved offset << OpFormat.read22t
-                    | 0x34uy -> curry If Lt << convert3unresolved offset << OpFormat.read22t
-                    | 0x35uy -> curry If Ge << convert3unresolved offset << OpFormat.read22t
-                    | 0x36uy -> curry If Gt << convert3unresolved offset << OpFormat.read22t
-                    | 0x37uy -> curry If Le << convert3unresolved offset << OpFormat.read22t
-                    | 0x38uy -> curry IfZ Eq << convert2unresolved offset << OpFormat.read21t
-                    | 0x39uy -> curry IfZ Ne << convert2unresolved offset << OpFormat.read21t
-                    | 0x3Auy -> curry IfZ Lt << convert2unresolved offset << OpFormat.read21t
-                    | 0x3Buy -> curry IfZ Ge << convert2unresolved offset << OpFormat.read21t
-                    | 0x3Cuy -> curry IfZ Gt << convert2unresolved offset << OpFormat.read21t
-                    | 0x3Duy -> curry IfZ Le << convert2unresolved offset << OpFormat.read21t
+                    | 0x32uy -> curry If Eq << Arrows.thirdOf3 (RelativeBytes << int32) << OpFormat.read22t
+                    | 0x33uy -> curry If Ne << Arrows.thirdOf3 (RelativeBytes << int32) << OpFormat.read22t
+                    | 0x34uy -> curry If Lt << Arrows.thirdOf3 (RelativeBytes << int32) << OpFormat.read22t
+                    | 0x35uy -> curry If Ge << Arrows.thirdOf3 (RelativeBytes << int32) << OpFormat.read22t
+                    | 0x36uy -> curry If Gt << Arrows.thirdOf3 (RelativeBytes << int32) << OpFormat.read22t
+                    | 0x37uy -> curry If Le << Arrows.thirdOf3 (RelativeBytes << int32) << OpFormat.read22t
+                    | 0x38uy -> curry IfZ Eq << Arrows.secondOf2 (RelativeBytes << int32) << OpFormat.read21t
+                    | 0x39uy -> curry IfZ Ne << Arrows.secondOf2 (RelativeBytes << int32) << OpFormat.read21t
+                    | 0x3Auy -> curry IfZ Lt << Arrows.secondOf2 (RelativeBytes << int32) << OpFormat.read21t
+                    | 0x3Buy -> curry IfZ Ge << Arrows.secondOf2 (RelativeBytes << int32) << OpFormat.read21t
+                    | 0x3Cuy -> curry IfZ Gt << Arrows.secondOf2 (RelativeBytes << int32) << OpFormat.read21t
+                    | 0x3Duy -> curry IfZ Le << Arrows.secondOf2 (RelativeBytes << int32) << OpFormat.read21t
 
                     | 0x44uy
                     | 0x46uy
@@ -456,11 +456,25 @@ module Dex =
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()
                 ) stream
 
+            let resolveOffset (cur, insn) = // TODO: more efficient lookup?
+                let resolved rel =
+                    match Array.tryFindIndex (fun (ofs, _) -> int32 ofs = int32 cur + rel) result with
+                        | Some i -> AbsoluteIndex i
+                        | None -> failwith "Could not resolve relative offset"
+                    
+                match insn with
+                   (*| FillArrayData ... -> *) // TODO: FillArrayData
+                   | Goto (RelativeBytes off)               -> Goto (resolved off)
+                   | If (test, (a, b, RelativeBytes off))   -> If (test, (a, b, resolved off))
+                   | IfZ (test, (a, RelativeBytes off))     -> IfZ (test, (a, resolved off))
+                   | _                                      -> insn
+                
+
             while !offset < size do
                 let pos = stream.Offset
-                Array.push result <| readInstruction ()
+                Array.push result <| (!offset, readInstruction ())
                 offset := !offset + (stream.Offset - pos) / 2u
-            result
+            Array.map resolveOffset result
 
 
     and
