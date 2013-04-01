@@ -10,6 +10,9 @@ module Dex =
     let NO_INDEX = 0xFFFFFFFFu
 
     [<JavaScript>]
+    let curry f a b = f (a, b)
+
+    [<JavaScript>]
     type DexFile [<JavaScript>] private () =
         member val Strings : string array = [| |]
         member val Types : Type array = [| |]
@@ -223,295 +226,184 @@ module Dex =
             let readInstruction () =
                 let op = stream.GetByte ()
                 match op with
-                    | 0x00uy -> OpFormat.read10x stream
-                                Nop
+                    | 0x00uy -> Nop <| OpFormat.read10x stream
                     | 0x01uy
-                    | 0x07uy -> let (d, s) = OpFormat.read12x stream
-                                Move (reg d, reg s)
+                    | 0x07uy -> Move <| OpFormat.read12x stream
                     | 0x02uy
-                    | 0x08uy -> let (d, s) = OpFormat.read22x stream
-                                Move (reg d, reg s)
+                    | 0x08uy -> Move <| OpFormat.read22x stream
                     | 0x03uy
-                    | 0x09uy -> let (d, s) = OpFormat.read32x stream
-                                Move (reg d, reg s)
-                    | 0x04uy -> let (d, s) = OpFormat.read12x stream
-                                MoveWide (reg d, reg s)
-                    | 0x05uy -> let (d, s) = OpFormat.read22x stream
-                                MoveWide (reg d, reg s)
-                    | 0x06uy -> let (d, s) = OpFormat.read32x stream
-                                MoveWide (reg d, reg s)
+                    | 0x09uy -> Move <| OpFormat.read32x stream
+                    | 0x04uy -> MoveWide <| OpFormat.read12x stream
+                    | 0x05uy -> MoveWide <| OpFormat.read22x stream
+                    | 0x06uy -> MoveWide <| OpFormat.read32x stream
 
                     | 0x0Auy
-                    | 0x0Cuy -> MoveResult (reg <| OpFormat.read11x stream)
-                    | 0x0Buy -> MoveResultWide (reg <| OpFormat.read11x stream)
-                    | 0x0Duy -> MoveException (reg <| OpFormat.read11x stream)
+                    | 0x0Cuy -> MoveResult <| OpFormat.read11x stream
+                    | 0x0Buy -> MoveResultWide <| OpFormat.read11x stream
+                    | 0x0Duy -> MoveException <| OpFormat.read11x stream
 
-                    | 0x0Euy -> OpFormat.read10x stream
-                                ReturnVoid
+                    | 0x0Euy -> ReturnVoid <| OpFormat.read10x stream
                     | 0x0Fuy
-                    | 0x11uy -> Return (reg <| OpFormat.read11x stream)
-                    | 0x10uy -> ReturnWide (reg <| OpFormat.read11x stream)
+                    | 0x11uy -> Return <| OpFormat.read11x stream
+                    | 0x10uy -> ReturnWide <| OpFormat.read11x stream
 
-                    | 0x12uy -> let (d, v) = OpFormat.read11n stream
-                                Const4 (reg d, v)
-                    | 0x13uy -> let (d, v) = OpFormat.read21s stream
-                                Const16 (reg d, v)
-                    | 0x14uy -> let (d, v) = OpFormat.read31i stream
-                                Const (reg d, v)
-                    | 0x15uy -> let (d, v) = OpFormat.read21h stream
-                                ConstHigh16 (reg d, v)
-                    | 0x16uy -> let (d, v) = OpFormat.read21s stream
-                                ConstWide16 (reg d, v)
-                    | 0x17uy -> let (d, v) = OpFormat.read31i stream
-                                ConstWide32 (reg d, v)
-                    | 0x18uy -> let (d, v) = OpFormat.read51l stream
-                                ConstWide (reg d, v)
-                    | 0x19uy -> let (d, v) = OpFormat.read21h stream
-                                ConstWideHigh16 (reg d, v)
-                    | 0x1Auy -> let (d, v) = OpFormat.read21c stream
-                                ConstString (reg d, v)
-                    | 0x1Buy -> let (d, v) = OpFormat.read31c stream
-                                ConstStringJumdo (reg d, v)
-                    | 0x1Cuy -> let (d, v) = OpFormat.read21c stream
-                                ConstClass (reg d, v)
+                    | 0x12uy -> Const4 <| OpFormat.read11n stream
+                    | 0x13uy -> Const16 <| OpFormat.read21s stream
+                    | 0x14uy -> Const <| OpFormat.read31i stream
+                    | 0x15uy -> ConstHigh16 <| OpFormat.read21h stream
+                    | 0x16uy -> ConstWide16 <| OpFormat.read21s stream
+                    | 0x17uy -> ConstWide32 <| OpFormat.read31i stream
+                    | 0x18uy -> ConstWide <| OpFormat.read51l stream
+                    | 0x19uy -> ConstWideHigh16 <| OpFormat.read21h stream
+                    | 0x1Auy -> ConstString <| OpFormat.read21c stream
+                    | 0x1Buy -> ConstStringJumdo <| OpFormat.read31c stream
+                    | 0x1Cuy -> ConstClass <| OpFormat.read21c stream
 
-                    | 0x1Duy -> MonitorEnter (reg <| OpFormat.read11x stream)
-                    | 0x1Euy -> MonitorExit (reg <| OpFormat.read11x stream)
+                    | 0x1Duy -> MonitorEnter <| OpFormat.read11x stream
+                    | 0x1Euy -> MonitorExit <| OpFormat.read11x stream
 
-                    | 0x1Fuy -> let (d, t) = OpFormat.read21c stream
-                                CheckCast (reg d, t)
-                    | 0x20uy -> let (d, r, t) = OpFormat.read22c stream
-                                InstanceOf (reg d, reg r, t)
-                    | 0x21uy -> let (d, r) = OpFormat.read12x stream
-                                ArrayLength (reg d, reg r)
-                    | 0x22uy -> let (d, t) = OpFormat.read21c stream
-                                NewInstance (reg d, t)
-                    | 0x23uy -> let (d, s, t) = OpFormat.read22c stream
-                                NewArray (reg d, reg s, t)
+                    | 0x1Fuy -> CheckCast <| OpFormat.read21c stream
+                    | 0x20uy -> InstanceOf <| OpFormat.read22c stream
+                    | 0x21uy -> ArrayLength <| OpFormat.read12x stream
+                    | 0x22uy -> NewInstance <| OpFormat.read21c stream
+                    | 0x23uy -> NewArray <| OpFormat.read22c stream
                     (*| 0x24uy -> *) // TODO: 35c
                     (*| 0x25uy -> *) // TODO: 35rc
                     (*| 0x26uy -> let (r, b) = OpFormat.read31t stream
                                 FillArrayData (reg r, Unresolved (!offset, b)) *) // TODO: fill-array-data
 
-                    | 0x27uy -> Throw (reg <| OpFormat.read11x stream)
-                    | 0x28uy -> Goto (Unresolved (!offset, int32 <| OpFormat.read10t stream))
-                    | 0x29uy -> Goto (Unresolved (!offset, int32 <| OpFormat.read20t stream))
-                    | 0x2Auy -> Goto (Unresolved (!offset, int32 <| OpFormat.read30t stream))
+                    | 0x27uy -> Throw <| OpFormat.read11x stream
+                    | 0x28uy -> Goto << (curry Unresolved !offset) << int32 <| OpFormat.read10t stream
+                    | 0x29uy -> Goto << (curry Unresolved !offset) << int32 <| OpFormat.read20t stream
+                    | 0x2Auy -> Goto << (curry Unresolved !offset) << int32 <| OpFormat.read30t stream
                     (*| 0x2Buy -> *) // TODO: packed-switch
                     (*| 0x2Cuy -> *) // TODO: sparse switch
 
-                    | 0x2Duy -> let (d, f, s) = OpFormat.read23x stream
-                                CmpFloat (LtBias, (reg d, reg f, reg s))
-                    | 0x2Euy -> let (d, f, s) = OpFormat.read23x stream
-                                CmpFloat (GtBias, (reg d, reg f, reg s))
-                    | 0x2Fuy -> let (d, f, s) = OpFormat.read23x stream
-                                CmpDouble (LtBias, (reg d, reg f, reg s))
-                    | 0x30uy -> let (d, f, s) = OpFormat.read23x stream
-                                CmpDouble (GtBias, (reg d, reg f, reg s))
-                    | 0x31uy -> let (dest, f, s) = OpFormat.read23x stream
-                                CmpLong (reg dest, reg f, reg s)
+                    | 0x2Duy -> curry CmpFloat LtBias <| OpFormat.read23x stream
+                    | 0x2Euy -> curry CmpFloat GtBias <| OpFormat.read23x stream
+                    | 0x2Fuy -> curry CmpDouble LtBias <| OpFormat.read23x stream
+                    | 0x30uy -> curry CmpDouble GtBias <| OpFormat.read23x stream
+                    | 0x31uy -> CmpLong <| OpFormat.read23x stream
 
-                    | 0x32uy -> let (f, s, branch) = OpFormat.read22t stream
-                                If (Eq, (reg f, reg s, Unresolved (!offset, branch)))
-                    | 0x33uy -> let (f, s, branch) = OpFormat.read22t stream
-                                If (Ne, (reg f, reg s, Unresolved (!offset, branch)))
-                    | 0x34uy -> let (f, s, branch) = OpFormat.read22t stream
-                                If (Lt, (reg f, reg s, Unresolved (!offset, branch)))
-                    | 0x35uy -> let (f, s, branch) = OpFormat.read22t stream
-                                If (Ge, (reg f, reg s, Unresolved (!offset, branch)))
-                    | 0x36uy -> let (f, s, branch) = OpFormat.read22t stream
-                                If (Gt, (reg f, reg s, Unresolved (!offset, branch)))
-                    | 0x37uy -> let (f, s, branch) = OpFormat.read22t stream
-                                If (Le, (reg f, reg s, Unresolved (!offset, branch)))
-                    | 0x38uy -> let (f, branch) = OpFormat.read21t stream
-                                IfZ (Eq, (reg f, Unresolved (!offset, branch)))
-                    | 0x39uy -> let (f, branch) = OpFormat.read21t stream
-                                IfZ (Ne, (reg f, Unresolved (!offset, branch)))
-                    | 0x3Auy -> let (f, branch) = OpFormat.read21t stream
-                                IfZ (Lt, (reg f, Unresolved (!offset, branch)))
-                    | 0x3Buy -> let (f, branch) = OpFormat.read21t stream
-                                IfZ (Ge, (reg f, Unresolved (!offset, branch)))
-                    | 0x3Cuy -> let (f, branch) = OpFormat.read21t stream
-                                IfZ (Gt, (reg f, Unresolved (!offset, branch)))
-                    | 0x3Duy -> let (f, branch) = OpFormat.read21t stream
-                                IfZ (Le, (reg f, Unresolved (!offset, branch)))
+                    | 0x32uy -> curry If Eq << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) <| OpFormat.read22t stream
+                    | 0x33uy -> curry If Ne << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) <| OpFormat.read22t stream
+                    | 0x34uy -> curry If Lt << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) <| OpFormat.read22t stream
+                    | 0x35uy -> curry If Ge << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) <| OpFormat.read22t stream
+                    | 0x36uy -> curry If Gt << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) <| OpFormat.read22t stream
+                    | 0x37uy -> curry If Le << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) <| OpFormat.read22t stream
+                    | 0x38uy -> curry IfZ Eq << (fun (f,b) -> (f,Unresolved (!offset, b))) <| OpFormat.read21t stream
+                    | 0x39uy -> curry IfZ Ne << (fun (f,b) -> (f,Unresolved (!offset, b))) <| OpFormat.read21t stream
+                    | 0x3Auy -> curry IfZ Lt << (fun (f,b) -> (f,Unresolved (!offset, b))) <| OpFormat.read21t stream
+                    | 0x3Buy -> curry IfZ Ge << (fun (f,b) -> (f,Unresolved (!offset, b))) <| OpFormat.read21t stream
+                    | 0x3Cuy -> curry IfZ Gt << (fun (f,b) -> (f,Unresolved (!offset, b))) <| OpFormat.read21t stream
+                    | 0x3Duy -> curry IfZ Le << (fun (f,b) -> (f,Unresolved (!offset, b))) <| OpFormat.read21t stream
 
                     | 0x44uy
                     | 0x46uy
                     | 0x47uy
                     | 0x48uy
                     | 0x49uy
-                    | 0x4Auy -> let (v, r, i) = OpFormat.read23x stream
-                                Aget (reg v, reg r, reg i)
-                    | 0x45uy -> let (v, r, i) = OpFormat.read23x stream
-                                AgetWide (reg v, reg r, reg i)
+                    | 0x4Auy -> Aget <| OpFormat.read23x stream
+                    | 0x45uy -> AgetWide <| OpFormat.read23x stream
                     | 0x4Buy
                     | 0x4Duy
                     | 0x4Euy
                     | 0x4Fuy
                     | 0x50uy
-                    | 0x51uy -> let (v, r, i) = OpFormat.read23x stream
-                                Aput (reg v, reg r, reg i)
-                    | 0x4Cuy -> let (v, r, i) = OpFormat.read23x stream
-                                AputWide (reg v, reg r, reg i)
+                    | 0x51uy -> Aput <| OpFormat.read23x stream
+                    | 0x4Cuy -> AputWide <| OpFormat.read23x stream
 
                     | 0x52uy
                     | 0x54uy
                     | 0x55uy
                     | 0x56uy
                     | 0x57uy
-                    | 0x58uy -> let (v, r, f) = OpFormat.read22c stream
-                                Iget (reg v, reg r, f)
-                    | 0x53uy -> let (v, r, f) = OpFormat.read22c stream
-                                IgetWide (reg v, reg r, f)
+                    | 0x58uy -> Iget <| OpFormat.read22c stream
+                    | 0x53uy -> IgetWide <| OpFormat.read22c stream
                     | 0x59uy
                     | 0x5Buy
                     | 0x5Cuy
                     | 0x5Duy
                     | 0x5Euy
-                    | 0x5Fuy -> let (v, r, f) = OpFormat.read22c stream
-                                Iput (reg v, reg r, f)
-                    | 0x5Auy -> let (v, r, f) = OpFormat.read22c stream
-                                IputWide (reg v, reg r, f)
+                    | 0x5Fuy -> Iput <| OpFormat.read22c stream
+                    | 0x5Auy -> IputWide <| OpFormat.read22c stream
 
                     | 0x60uy
                     | 0x62uy
                     | 0x63uy
                     | 0x64uy
                     | 0x65uy
-                    | 0x66uy -> let (v, f) = OpFormat.read21c stream
-                                Sget (reg v, f)
-                    | 0x61uy -> let (v, f) = OpFormat.read21c stream
-                                SgetWide (reg v, f)
+                    | 0x66uy -> Sget <| OpFormat.read21c stream
+                    | 0x61uy -> SgetWide <| OpFormat.read21c stream
                     | 0x67uy
                     | 0x69uy
                     | 0x6Auy
                     | 0x6Buy
                     | 0x6Cuy
-                    | 0x6Duy -> let (v, f) = OpFormat.read21c stream
-                                Sput (reg v, f)
-                    | 0x68uy -> let (v, f) = OpFormat.read21c stream
-                                SputWide (reg v, f)
+                    | 0x6Duy -> Sput <| OpFormat.read21c stream
+                    | 0x68uy -> SputWide <| OpFormat.read21c stream
 
-                    | 0x6Euy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
-                                Invoke (InvokeVirtual, (count, meth, reg c, reg d, reg e, reg f, reg g))
-                    | 0x6Fuy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
-                                Invoke (InvokeSuper, (count, meth, reg c, reg d, reg e, reg f, reg g))
-                    | 0x70uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
-                                Invoke (InvokeDirect, (count, meth, reg c, reg d, reg e, reg f, reg g))
-                    | 0x71uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
-                                Invoke (InvokeStatic, (count, meth, reg c, reg d, reg e, reg f, reg g))
-                    | 0x72uy -> let (count, meth, c, d, e, f, g) = OpFormat.read35c stream
-                                Invoke (InvokeInterface, (count, meth, reg c, reg d, reg e, reg f, reg g))
+                    | 0x6Euy -> curry Invoke InvokeVirtual <| OpFormat.read35c stream
+                    | 0x6Fuy -> curry Invoke InvokeSuper <| OpFormat.read35c stream
+                    | 0x70uy -> curry Invoke InvokeDirect <| OpFormat.read35c stream
+                    | 0x71uy -> curry Invoke InvokeStatic <| OpFormat.read35c stream
+                    | 0x72uy -> curry Invoke InvokeInterface <| OpFormat.read35c stream
                     (*0x74uy -> *) // TODO: 3rc
 
-                    | 0x7Buy -> let (d, s) = OpFormat.read12x stream
-                                NegInt (reg d, reg s)
-                    | 0x7Cuy -> let (d, s) = OpFormat.read12x stream
-                                NotInt (reg d, reg s)
-                    | 0x7Duy -> let (d, s) = OpFormat.read12x stream
-                                NegLong (reg d, reg s)
-                    | 0x7Euy -> let (d, s) = OpFormat.read12x stream
-                                NotLong (reg d, reg s)
-                    | 0x7Fuy -> let (d, s) = OpFormat.read12x stream
-                                NegFloat (reg d, reg s)
-                    | 0x80uy -> let (d, s) = OpFormat.read12x stream
-                                NegDouble (reg d, reg s)
-                    | 0x81uy -> let (d, s) = OpFormat.read12x stream
-                                IntToLong (reg d, reg s)
-                    | 0x82uy -> let (d, s) = OpFormat.read12x stream
-                                IntToFloat (reg d, reg s)
-                    | 0x83uy -> let (d, s) = OpFormat.read12x stream
-                                IntToDouble (reg d, reg s)
-                    | 0x84uy -> let (d, s) = OpFormat.read12x stream
-                                LongToInt (reg d, reg s)
-                    | 0x85uy -> let (d, s) = OpFormat.read12x stream
-                                LongToFloat (reg d, reg s)
-                    | 0x86uy -> let (d, s) = OpFormat.read12x stream
-                                LongToDouble (reg d, reg s)
-                    | 0x87uy -> let (d, s) = OpFormat.read12x stream
-                                FloatToInt (reg d, reg s)
-                    | 0x88uy -> let (d, s) = OpFormat.read12x stream
-                                FloatToLong (reg d, reg s)
-                    | 0x89uy -> let (d, s) = OpFormat.read12x stream
-                                FloatToDouble (reg d, reg s)
-                    | 0x8Auy -> let (d, s) = OpFormat.read12x stream
-                                DoubleToInt (reg d, reg s)
-                    | 0x8Buy -> let (d, s) = OpFormat.read12x stream
-                                DoubleToLong (reg d, reg s)
-                    | 0x8Cuy -> let (d, s) = OpFormat.read12x stream
-                                DoubleToFloat (reg d, reg s)
-                    | 0x8Duy -> let (d, s) = OpFormat.read12x stream
-                                IntToByte (reg d, reg s)
-                    | 0x8Euy -> let (d, s) = OpFormat.read12x stream
-                                IntToChar (reg d, reg s)
-                    | 0x8Fuy -> let (d, s) = OpFormat.read12x stream
-                                IntToShort (reg d, reg s)
+                    | 0x7Buy -> NegInt <| OpFormat.read12x stream
+                    | 0x7Cuy -> NotInt <| OpFormat.read12x stream
+                    | 0x7Duy -> NegLong <| OpFormat.read12x stream
+                    | 0x7Euy -> NotLong <| OpFormat.read12x stream
+                    | 0x7Fuy -> NegFloat <| OpFormat.read12x stream
+                    | 0x80uy -> NegDouble <| OpFormat.read12x stream
+                    | 0x81uy -> IntToLong <| OpFormat.read12x stream
+                    | 0x82uy -> IntToFloat <| OpFormat.read12x stream
+                    | 0x83uy -> IntToDouble <| OpFormat.read12x stream
+                    | 0x84uy -> LongToInt <| OpFormat.read12x stream
+                    | 0x85uy -> LongToFloat <| OpFormat.read12x stream
+                    | 0x86uy -> LongToDouble <| OpFormat.read12x stream
+                    | 0x87uy -> FloatToInt <| OpFormat.read12x stream
+                    | 0x88uy -> FloatToLong <| OpFormat.read12x stream
+                    | 0x89uy -> FloatToDouble <| OpFormat.read12x stream
+                    | 0x8Auy -> DoubleToInt <| OpFormat.read12x stream
+                    | 0x8Buy -> DoubleToLong <| OpFormat.read12x stream
+                    | 0x8Cuy -> DoubleToFloat <| OpFormat.read12x stream
+                    | 0x8Duy -> IntToByte <| OpFormat.read12x stream
+                    | 0x8Euy -> IntToChar <| OpFormat.read12x stream
+                    | 0x8Fuy -> IntToShort <| OpFormat.read12x stream
 
-                    | 0x90uy -> let (d, f, s) = OpFormat.read23x stream
-                                AddInt (reg d, reg f, reg s)
-                    | 0x91uy -> let (d, f, s) = OpFormat.read23x stream
-                                SubInt (reg d, reg f, reg s)
-                    | 0x92uy -> let (d, f, s) = OpFormat.read23x stream
-                                MulInt (reg d, reg f, reg s)
-                    | 0x93uy -> let (d, f, s) = OpFormat.read23x stream
-                                DivInt (reg d, reg f, reg s)
-                    | 0x94uy -> let (d, f, s) = OpFormat.read23x stream
-                                RemInt (reg d, reg f, reg s)
-                    | 0x95uy -> let (d, f, s) = OpFormat.read23x stream
-                                AndInt (reg d, reg f, reg s)
-                    | 0x96uy -> let (d, f, s) = OpFormat.read23x stream
-                                OrInt (reg d, reg f, reg s)
-                    | 0x97uy -> let (d, f, s) = OpFormat.read23x stream
-                                XorInt (reg d, reg f, reg s)
-                    | 0x98uy -> let (d, f, s) = OpFormat.read23x stream
-                                ShlInt (reg d, reg f, reg s)
-                    | 0x99uy -> let (d, f, s) = OpFormat.read23x stream
-                                ShrInt (reg d, reg f, reg s)
-                    | 0x9Auy -> let (d, f, s) = OpFormat.read23x stream
-                                UshrInt (reg d, reg f, reg s)
-                    | 0x9Buy -> let (d, f, s) = OpFormat.read23x stream
-                                AddLong (reg d, reg f, reg s)
-                    | 0x9Cuy -> let (d, f, s) = OpFormat.read23x stream
-                                SubLong (reg d, reg f, reg s)
-                    | 0x9Duy -> let (d, f, s) = OpFormat.read23x stream
-                                MulLong (reg d, reg f, reg s)
-                    | 0x9Euy -> let (d, f, s) = OpFormat.read23x stream
-                                DivLong (reg d, reg f, reg s)
-                    | 0x9Fuy -> let (d, f, s) = OpFormat.read23x stream
-                                RemLong (reg d, reg f, reg s)
-                    | 0xA0uy -> let (d, f, s) = OpFormat.read23x stream
-                                AndLong (reg d, reg f, reg s)
-                    | 0xA1uy -> let (d, f, s) = OpFormat.read23x stream
-                                OrLong (reg d, reg f, reg s)
-                    | 0xA2uy -> let (d, f, s) = OpFormat.read23x stream
-                                XorLong (reg d, reg f, reg s)
-                    | 0xA3uy -> let (d, f, s) = OpFormat.read23x stream
-                                ShlLong (reg d, reg f, reg s)
-                    | 0xA4uy -> let (d, f, s) = OpFormat.read23x stream
-                                ShrLong (reg d, reg f, reg s)
-                    | 0xA5uy -> let (d, f, s) = OpFormat.read23x stream
-                                UshrLong (reg d, reg f, reg s)
-                    | 0xA6uy -> let (d, f, s) = OpFormat.read23x stream
-                                AddFloat (reg d, reg f, reg s)
-                    | 0xA7uy -> let (d, f, s) = OpFormat.read23x stream
-                                SubFloat (reg d, reg f, reg s)
-                    | 0xA8uy -> let (d, f, s) = OpFormat.read23x stream
-                                MulFloat (reg d, reg f, reg s)
-                    | 0xA9uy -> let (d, f, s) = OpFormat.read23x stream
-                                DivFloat (reg d, reg f, reg s)
-                    | 0xAAuy -> let (d, f, s) = OpFormat.read23x stream
-                                RemFloat (reg d, reg f, reg s)
-                    | 0xABuy -> let (d, f, s) = OpFormat.read23x stream
-                                AddDouble (reg d, reg f, reg s)
-                    | 0xACuy -> let (d, f, s) = OpFormat.read23x stream
-                                SubDouble (reg d, reg f, reg s)
-                    | 0xADuy -> let (d, f, s) = OpFormat.read23x stream
-                                MulDouble (reg d, reg f, reg s)
-                    | 0xAEuy -> let (d, f, s) = OpFormat.read23x stream
-                                DivDouble (reg d, reg f, reg s)
-                    | 0xAFuy -> let (d, f, s) = OpFormat.read23x stream
-                                RemDouble (reg d, reg f, reg s)
+                    | 0x90uy -> AddInt  <| OpFormat.read23x stream
+                    | 0x91uy -> SubInt  <| OpFormat.read23x stream
+                    | 0x92uy -> MulInt  <| OpFormat.read23x stream
+                    | 0x93uy -> DivInt  <| OpFormat.read23x stream
+                    | 0x94uy -> RemInt  <| OpFormat.read23x stream
+                    | 0x95uy -> AndInt  <| OpFormat.read23x stream
+                    | 0x96uy -> OrInt   <| OpFormat.read23x stream
+                    | 0x97uy -> XorInt  <| OpFormat.read23x stream
+                    | 0x98uy -> ShlInt  <| OpFormat.read23x stream
+                    | 0x99uy -> ShrInt  <| OpFormat.read23x stream
+                    | 0x9Auy -> UshrInt <| OpFormat.read23x stream
+                    | 0x9Buy -> AddLong  <| OpFormat.read23x stream
+                    | 0x9Cuy -> SubLong  <| OpFormat.read23x stream
+                    | 0x9Duy -> MulLong  <| OpFormat.read23x stream
+                    | 0x9Euy -> DivLong  <| OpFormat.read23x stream
+                    | 0x9Fuy -> RemLong  <| OpFormat.read23x stream
+                    | 0xA0uy -> AndLong  <| OpFormat.read23x stream
+                    | 0xA1uy -> OrLong   <| OpFormat.read23x stream
+                    | 0xA2uy -> XorLong  <| OpFormat.read23x stream
+                    | 0xA3uy -> ShlLong  <| OpFormat.read23x stream
+                    | 0xA4uy -> ShrLong  <| OpFormat.read23x stream
+                    | 0xA5uy -> UshrLong <| OpFormat.read23x stream
+                    | 0xA6uy -> AddFloat <| OpFormat.read23x stream
+                    | 0xA7uy -> SubFloat <| OpFormat.read23x stream
+                    | 0xA8uy -> MulFloat <| OpFormat.read23x stream
+                    | 0xA9uy -> DivFloat <| OpFormat.read23x stream
+                    | 0xAAuy -> RemFloat <| OpFormat.read23x stream
+                    | 0xABuy -> AddDouble <| OpFormat.read23x stream
+                    | 0xACuy -> SubDouble <| OpFormat.read23x stream
+                    | 0xADuy -> MulDouble <| OpFormat.read23x stream
+                    | 0xAEuy -> DivDouble <| OpFormat.read23x stream
+                    | 0xAFuy -> RemDouble <| OpFormat.read23x stream
 
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()
 
