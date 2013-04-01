@@ -158,7 +158,7 @@ module ByteCode =
         (* ...cf *) | UshrLong of reg * reg * reg
 
         (* d0... *) | AddIntLit of reg * reg * int32
-                    | RsubInt of reg * reg * int32
+                    | RsubIntLit of reg * reg * int32
                     | MulIntLit of reg * reg * int32
                     | DivIntLit of reg * reg * int32
                     | RemIntLit of reg * reg * int32
@@ -238,3 +238,11 @@ module ByteCode =
 
         let read51l (stream : FileArray.DexFileArray) : reg * (int32 * int32) =
             (reg <| stream.GetByte (), stream.GetInt64 ())
+
+
+    [<JavaScript>]
+    let convert3unresolved offset = Arrows.thirdOf3 <| curry Unresolved !offset
+    [<JavaScript>]
+    let convert2unresolved offset = Arrows.secondOf2 <| curry Unresolved !offset
+    [<JavaScript>]
+    let convert2addr (df, s) = (df, df, s)

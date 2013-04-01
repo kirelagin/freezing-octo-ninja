@@ -282,18 +282,18 @@ module Dex =
                     | 0x30uy -> curry CmpDouble GtBias << OpFormat.read23x
                     | 0x31uy -> CmpLong << OpFormat.read23x
 
-                    | 0x32uy -> curry If Eq << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) << OpFormat.read22t
-                    | 0x33uy -> curry If Ne << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) << OpFormat.read22t
-                    | 0x34uy -> curry If Lt << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) << OpFormat.read22t
-                    | 0x35uy -> curry If Ge << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) << OpFormat.read22t
-                    | 0x36uy -> curry If Gt << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) << OpFormat.read22t
-                    | 0x37uy -> curry If Le << (fun (f,s,b) -> (f,s,Unresolved (!offset, b))) << OpFormat.read22t
-                    | 0x38uy -> curry IfZ Eq << (fun (f,b) -> (f,Unresolved (!offset, b))) << OpFormat.read21t
-                    | 0x39uy -> curry IfZ Ne << (fun (f,b) -> (f,Unresolved (!offset, b))) << OpFormat.read21t
-                    | 0x3Auy -> curry IfZ Lt << (fun (f,b) -> (f,Unresolved (!offset, b))) << OpFormat.read21t
-                    | 0x3Buy -> curry IfZ Ge << (fun (f,b) -> (f,Unresolved (!offset, b))) << OpFormat.read21t
-                    | 0x3Cuy -> curry IfZ Gt << (fun (f,b) -> (f,Unresolved (!offset, b))) << OpFormat.read21t
-                    | 0x3Duy -> curry IfZ Le << (fun (f,b) -> (f,Unresolved (!offset, b))) << OpFormat.read21t
+                    | 0x32uy -> curry If Eq << convert3unresolved offset << OpFormat.read22t
+                    | 0x33uy -> curry If Ne << convert3unresolved offset << OpFormat.read22t
+                    | 0x34uy -> curry If Lt << convert3unresolved offset << OpFormat.read22t
+                    | 0x35uy -> curry If Ge << convert3unresolved offset << OpFormat.read22t
+                    | 0x36uy -> curry If Gt << convert3unresolved offset << OpFormat.read22t
+                    | 0x37uy -> curry If Le << convert3unresolved offset << OpFormat.read22t
+                    | 0x38uy -> curry IfZ Eq << convert2unresolved offset << OpFormat.read21t
+                    | 0x39uy -> curry IfZ Ne << convert2unresolved offset << OpFormat.read21t
+                    | 0x3Auy -> curry IfZ Lt << convert2unresolved offset << OpFormat.read21t
+                    | 0x3Buy -> curry IfZ Ge << convert2unresolved offset << OpFormat.read21t
+                    | 0x3Cuy -> curry IfZ Gt << convert2unresolved offset << OpFormat.read21t
+                    | 0x3Duy -> curry IfZ Le << convert2unresolved offset << OpFormat.read21t
 
                     | 0x44uy
                     | 0x46uy
@@ -401,6 +401,57 @@ module Dex =
                     | 0xADuy -> MulDouble << OpFormat.read23x
                     | 0xAEuy -> DivDouble << OpFormat.read23x
                     | 0xAFuy -> RemDouble << OpFormat.read23x
+
+                    | 0xB0uy -> AddInt  << convert2addr << OpFormat.read12x
+                    | 0xB1uy -> SubInt  << convert2addr << OpFormat.read12x
+                    | 0xB2uy -> MulInt  << convert2addr << OpFormat.read12x
+                    | 0xB3uy -> DivInt  << convert2addr << OpFormat.read12x
+                    | 0xB4uy -> RemInt  << convert2addr << OpFormat.read12x
+                    | 0xB5uy -> AndInt  << convert2addr << OpFormat.read12x
+                    | 0xB6uy -> OrInt   << convert2addr << OpFormat.read12x
+                    | 0xB7uy -> XorInt  << convert2addr << OpFormat.read12x
+                    | 0xB8uy -> ShlInt  << convert2addr << OpFormat.read12x
+                    | 0xB9uy -> ShrInt  << convert2addr << OpFormat.read12x
+                    | 0xBAuy -> UshrInt << convert2addr << OpFormat.read12x
+                    | 0xBBuy -> AddLong  << convert2addr << OpFormat.read12x
+                    | 0xBCuy -> SubLong  << convert2addr << OpFormat.read12x
+                    | 0xBDuy -> MulLong  << convert2addr << OpFormat.read12x
+                    | 0xBEuy -> DivLong  << convert2addr << OpFormat.read12x
+                    | 0xBFuy -> RemLong  << convert2addr << OpFormat.read12x
+                    | 0xC0uy -> AndLong  << convert2addr << OpFormat.read12x
+                    | 0xC1uy -> OrLong   << convert2addr << OpFormat.read12x
+                    | 0xC2uy -> XorLong  << convert2addr << OpFormat.read12x
+                    | 0xC3uy -> ShlLong  << convert2addr << OpFormat.read12x
+                    | 0xC4uy -> ShrLong  << convert2addr << OpFormat.read12x
+                    | 0xC5uy -> UshrLong << convert2addr << OpFormat.read12x
+                    | 0xC6uy -> AddFloat << convert2addr << OpFormat.read12x
+                    | 0xC7uy -> SubFloat << convert2addr << OpFormat.read12x
+                    | 0xC8uy -> MulFloat << convert2addr << OpFormat.read12x
+                    | 0xC9uy -> DivFloat << convert2addr << OpFormat.read12x
+                    | 0xCAuy -> RemFloat << convert2addr << OpFormat.read12x
+                    | 0xCBuy -> AddDouble << convert2addr << OpFormat.read12x
+                    | 0xCCuy -> SubDouble << convert2addr << OpFormat.read12x
+                    | 0xCDuy -> MulDouble << convert2addr << OpFormat.read12x
+                    | 0xCEuy -> DivDouble << convert2addr << OpFormat.read12x
+                    | 0xCFuy -> RemDouble << convert2addr << OpFormat.read12x
+
+                    | 0xD0uy -> AddIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22s
+                    | 0xD1uy -> RsubIntLit << Arrows.thirdOf3 int32 << OpFormat.read22s
+                    | 0xD2uy -> MulIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22s
+                    | 0xD3uy -> DivIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22s
+                    | 0xD4uy -> RemIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22s
+                    | 0xD5uy -> AndIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22s
+                    | 0xD6uy -> OrIntLit   << Arrows.thirdOf3 int32 << OpFormat.read22s
+                    | 0xD7uy -> XorIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22s
+
+                    | 0xD8uy -> AddIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xD9uy -> RsubIntLit << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xDAuy -> MulIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xDBuy -> DivIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xDCuy -> RemIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xDDuy -> AndIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xDEuy -> OrIntLit   << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xDFuy -> XorIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
 
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()
                 ) stream
