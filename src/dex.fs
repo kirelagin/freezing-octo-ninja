@@ -10,9 +10,6 @@ module Dex =
     let NO_INDEX = 0xFFFFFFFFu
 
     [<JavaScript>]
-    let curry f a b = f (a, b)
-
-    [<JavaScript>]
     type DexFile [<JavaScript>] private () =
         member val Strings : string array = [| |]
         member val Types : Type array = [| |]
