@@ -62,14 +62,14 @@ module ByteCode =
         (* 21 *)    | ArrayLength of reg * reg
         (* 22 *)    | NewInstance of reg * uint16
         (* 23 *)    | NewArray of reg * reg * uint16
-        (* 24 *)    (*| FilledNewArray of *)
-        (* 25 *)    (*| FilledNewArrayRange of *)
-        (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *)
+        (* 24 *)    (*| FilledNewArray of *) //TODO #7
+        (* 25 *)    (*| FilledNewArrayRange of *) //TODO #8
+        (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *) //TODO #9
 
         (* 27 *)    | Throw of reg
         (* 28-2a *) | Goto of CodeOffset
-        (* 2b *)    (*| PackedSwitch of *)
-        (* 2c *)    (*| SparseSwitch of *)
+        (* 2b *)    (*| PackedSwitch of *) //TODO #9
+        (* 2c *)    (*| SparseSwitch of *) //TODO #9
 
         (* 2d-2e *) | CmpFloat of Bias * (reg * reg * reg)
         (* 2f-30 *) | CmpDouble of Bias * (reg * reg * reg)
@@ -100,7 +100,7 @@ module ByteCode =
         (* 68 *)    | SputWide of reg * uint16
 
         (* 6e-72 *) | Invoke of InvokeKind * (unibble * uint16 * reg * reg * reg * reg * reg)
-        (* 74-78 *) (*| InvokeRange of InvokeKind * uint8 * uint16 * reg *)
+        (* 74-78 *) (*| InvokeRange of InvokeKind * uint8 * uint16 * reg *) //TODO #8
 
         (* 7b... *) | NegInt of reg * reg
                     | NotInt of reg * reg
@@ -234,7 +234,7 @@ module ByteCode =
             let dc = stream.GetByte ()
             (unibble <| ag >>> 4, meth, reg <| unibble dc, reg << unibble <| dc >>> 4, reg <| unibble fe, reg << unibble <| fe >>> 4, reg <| unibble ag)
 
-        //let read3rc // TODO: opformat 3rc
+        //let read3rc //TODO #8
 
         let read51l (stream : FileArray.DexFileArray) : reg * (int32 * int32) =
             (reg <| stream.GetByte (), stream.GetInt64 ())

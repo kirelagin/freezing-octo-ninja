@@ -77,24 +77,24 @@ module FileArray =
             r
         member this.GetInt32Var (given : int) : int32 =
             let n = new Int32Array((new Uint8Array(this.GetBytesVar given 4 true)).Buffer)
-            int32 <| n.Get(0uL) // FIXME: remove convertion when WebSharper issue #118 is fixed
+            int32 <| n.Get(0uL) //TODO #4
         member this.GetUInt32 () : uint32 =
             let r = view.GetUint32 (float64 offset, true)
             offset <- offset + 4u
             r
         member this.GetUInt32Var (given : int) : uint32 =
             let n = new Uint32Array((new Uint8Array(this.GetBytesVar given 4 false)).Buffer)
-            uint32 <| n.Get(0uL) // FIXME: remove convertion when WebSharper issue #118 is fixed
+            uint32 <| n.Get(0uL) //TODO #4
         member this.GetInt64 () : int32 * int32 =
             (this.GetInt32 (), this.GetInt32 ())
         member this.GetInt64Var (given : int) : int32 * int32 =
             let n = new Int32Array((new Uint8Array(this.GetBytesVar given 8 true)).Buffer)
-            (int32 <| n.Get(0uL), int32 <| n.Get(1uL)) // FIXME: remove convertion when WebSharper issue #118 is fixed
+            (int32 <| n.Get(0uL), int32 <| n.Get(1uL)) //TODO #4
 
-        member this.GetFloatVar (given : int) : float32 = // TODO: spec says "zero-extended _to the right_". Is that bad?
+        member this.GetFloatVar (given : int) : float32 = //TODO #3
             let n = new Float32Array((new Uint8Array(this.GetBytesVar given 4 false)).Buffer)
             n.Get(0uL)
-        member this.GetDoubleVar (given : int) : double = // TODO: see GetFloatVar
+        member this.GetDoubleVar (given : int) : double = //TODO #3
             let n = new Float64Array((new Uint8Array(this.GetBytesVar given 8 false)).Buffer)
             n.Get(0uL)
 

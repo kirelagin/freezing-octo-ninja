@@ -110,6 +110,8 @@ module Dex =
                 let class_data_off = stream.GetUInt32 ()
                 let static_values_off = stream.GetUInt32 ()
 
+                //TODO #5 (read annotations here)
+
                 // Reading class_data
                 stream.Seek class_data_off |> ignore
 
@@ -153,7 +155,7 @@ module Dex =
                             meth.Insns <- DexFile.Read_instructions stream insns_size dexf
                             if tries_size <> 0us && insns_size % 2u <> 0u then
                                 stream.GetUInt16 () |> ignore
-                            // TODO: read tries and handlers
+                            //TODO #10 (read tries and handlers)
                             stream.Seek old_off |> ignore
                         Array.push arr meth
                 
@@ -174,7 +176,6 @@ module Dex =
                                                     (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
                                                     Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
                                                     (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
-                                                    (* TODO: annotations smth,*)
                                                     static_fields, instance_fields, direct_methods, virtual_methods,
                                                     static_values)
 
@@ -211,7 +212,7 @@ module Dex =
                 | 0x1Auy -> JsRef << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
                 | 0x1Buy -> JsRef << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
                 | 0x1Cuy -> JsRef << As<obj> <| DexFile.Read_encoded_array stream dexf
-                | 0x1Duy -> failwith "Annotations are not supported" // TODO: annotations
+                | 0x1Duy -> failwith "Annotations are not supported" //TODO #5
                 | 0x1Euy -> JsRef null
                 | 0x1Fuy -> JsNumber << float64 <| value_arg
                 | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()
@@ -264,17 +265,17 @@ module Dex =
                     | 0x21uy -> ArrayLength << OpFormat.read12x
                     | 0x22uy -> NewInstance << OpFormat.read21c
                     | 0x23uy -> NewArray << OpFormat.read22c
-                    (*| 0x24uy -> *) // TODO: 35c
-                    (*| 0x25uy -> *) // TODO: 35rc
+                    (*| 0x24uy -> *) //TODO #7
+                    (*| 0x25uy -> *) //TODO #8
                     (*| 0x26uy -> let (r, b) = OpFormat.read31t
-                                FillArrayData (reg r, Unresolved (!offset, b)) *) // TODO: fill-array-data
+                                FillArrayData (reg r, ...read payload... *) //TODO #9
 
                     | 0x27uy -> Throw << OpFormat.read11x
                     | 0x28uy -> Goto << RelativeBytes << int32 << OpFormat.read10t
                     | 0x29uy -> Goto << RelativeBytes << int32 << OpFormat.read20t
                     | 0x2Auy -> Goto << RelativeBytes << int32 << OpFormat.read30t
-                    (*| 0x2Buy -> *) // TODO: packed-switch
-                    (*| 0x2Cuy -> *) // TODO: sparse switch
+                    (*| 0x2Buy -> *) //TODO #9 (packed-switch)
+                    (*| 0x2Cuy -> *) //TODO #9 (sparse switch)
 
                     | 0x2Duy -> curry CmpFloat LtBias << OpFormat.read23x
                     | 0x2Euy -> curry CmpFloat GtBias << OpFormat.read23x
@@ -345,7 +346,7 @@ module Dex =
                     | 0x70uy -> curry Invoke InvokeDirect << OpFormat.read35c
                     | 0x71uy -> curry Invoke InvokeStatic << OpFormat.read35c
                     | 0x72uy -> curry Invoke InvokeInterface << OpFormat.read35c
-                    (*0x74uy -> *) // TODO: 3rc
+                    (*0x74uy -> *) //TODO #8
 
                     | 0x7Buy -> NegInt << OpFormat.read12x
                     | 0x7Cuy -> NotInt << OpFormat.read12x
@@ -463,7 +464,7 @@ module Dex =
                         | None -> failwith "Could not resolve relative offset"
                     
                 match insn with
-                   (*| FillArrayData ... -> *) // TODO: FillArrayData
+                   (*| FillArrayData ... -> *) //TODO #9 [Why is it here? It should't contain an offset, the payload should already be read]
                    | Goto (RelativeBytes off)               -> Goto (resolved off)
                    | If (test, (a, b, RelativeBytes off))   -> If (test, (a, b, resolved off))
                    | IfZ (test, (a, RelativeBytes off))     -> IfZ (test, (a, resolved off))
@@ -516,15 +517,15 @@ module Dex =
     and
      [<JavaScript>]
      Class (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
-            source_file : string option, (* TODO: annotations : ?,*)
+            source_file : string option,
             static_fields : Field array, instance_fields : Field array, direct_methods : Method array, virual_methods : Method array,
             static_values : JsValue array) =
         member this.Class = dclass
-        (* TODO: access_flags getters *)
+        //TODO #6 (access flags)
         member this.Super = superclass
         member this.Interfaces = interfaces
         member this.SourceFile = source_file
-        (* TODO: annotations *)
-        // TODO: static_values seems to be never used in the real world… hm-hm-hm…
+        //TODO #5 (annotations)
+        //TODO #2 (static_values)
         override this.ToString () =
             "class " + dclass.ToString ()
