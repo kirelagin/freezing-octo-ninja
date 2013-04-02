@@ -110,6 +110,7 @@ module Dex =
                 let class_data_off = stream.GetUInt32 ()
                 let static_values_off = stream.GetUInt32 ()
 
+                let next_class_off = stream.Seek annotations_off
                 //TODO #5 (read annotations here)
 
                 // Reading class_data
@@ -178,6 +179,7 @@ module Dex =
                                                     (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
                                                     static_fields, instance_fields, direct_methods, virtual_methods,
                                                     static_values)
+                stream.Seek next_class_off |> ignore
 
         static member private Read_type_list stream offset =
             if offset = 0u then [| |] else
