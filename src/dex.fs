@@ -266,7 +266,7 @@ module Dex =
                     | 0x22uy -> NewInstance << OpFormat.read21c
                     | 0x23uy -> NewArray << OpFormat.read22c
                     | 0x24uy -> FilledNewArray << OpFormat.read35c
-                    (*| 0x25uy -> *) //TODO #8
+                    | 0x25uy -> FilledNewArrayRange << OpFormat.read3rc
                     (*| 0x26uy -> let (r, b) = OpFormat.read31t
                                 FillArrayData (reg r, ...read payload... *) //TODO #9
 
@@ -346,7 +346,11 @@ module Dex =
                     | 0x70uy -> curry Invoke InvokeDirect << OpFormat.read35c
                     | 0x71uy -> curry Invoke InvokeStatic << OpFormat.read35c
                     | 0x72uy -> curry Invoke InvokeInterface << OpFormat.read35c
-                    (*0x74uy -> *) //TODO #8
+                    | 0x74uy -> curry InvokeRange InvokeVirtual << OpFormat.read3rc
+                    | 0x75uy -> curry InvokeRange InvokeSuper << OpFormat.read3rc
+                    | 0x76uy -> curry InvokeRange InvokeDirect << OpFormat.read3rc
+                    | 0x77uy -> curry InvokeRange InvokeStatic << OpFormat.read3rc
+                    | 0x78uy -> curry InvokeRange InvokeInterface << OpFormat.read3rc
 
                     | 0x7Buy -> NegInt << OpFormat.read12x
                     | 0x7Cuy -> NotInt << OpFormat.read12x

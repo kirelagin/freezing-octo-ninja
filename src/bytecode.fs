@@ -63,7 +63,7 @@ module ByteCode =
         (* 22 *)    | NewInstance of reg * uint16
         (* 23 *)    | NewArray of reg * reg * uint16
         (* 24 *)    | FilledNewArray of (unibble * uint16 * reg * reg * reg * reg * reg )
-        (* 25 *)    (*| FilledNewArrayRange of *) //TODO #8
+        (* 25 *)    | FilledNewArrayRange of (uint8 * uint16 * reg)
         (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *) //TODO #9
 
         (* 27 *)    | Throw of reg
@@ -100,7 +100,7 @@ module ByteCode =
         (* 68 *)    | SputWide of reg * uint16
 
         (* 6e-72 *) | Invoke of InvokeKind * (unibble * uint16 * reg * reg * reg * reg * reg)
-        (* 74-78 *) (*| InvokeRange of InvokeKind * uint8 * uint16 * reg *) //TODO #8
+        (* 74-78 *) | InvokeRange of InvokeKind * (uint8 * uint16 * reg)
 
         (* 7b... *) | NegInt of reg * reg
                     | NotInt of reg * reg
@@ -234,7 +234,8 @@ module ByteCode =
             let dc = stream.GetByte ()
             (unibble <| ag >>> 4, meth, reg <| unibble dc, reg << unibble <| dc >>> 4, reg <| unibble fe, reg << unibble <| fe >>> 4, reg <| unibble ag)
 
-        //let read3rc //TODO #8
+        let read3rc (stream : FileArray.DexFileArray) : uint8 * uint16 * reg =
+            (stream.GetByte (), stream.GetUInt16 (), reg <| stream.GetUInt16 ())
 
         let read51l (stream : FileArray.DexFileArray) : reg * (int32 * int32) =
             (reg <| stream.GetByte (), stream.GetInt64 ())
