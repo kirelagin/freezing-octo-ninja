@@ -265,7 +265,7 @@ module Dex =
                     | 0x21uy -> ArrayLength << OpFormat.read12x
                     | 0x22uy -> NewInstance << OpFormat.read21c
                     | 0x23uy -> NewArray << OpFormat.read22c
-                    (*| 0x24uy -> *) //TODO #7
+                    | 0x24uy -> FilledNewArray << OpFormat.read35c
                     (*| 0x25uy -> *) //TODO #8
                     (*| 0x26uy -> let (r, b) = OpFormat.read31t
                                 FillArrayData (reg r, ...read payload... *) //TODO #9

@@ -62,7 +62,7 @@ module ByteCode =
         (* 21 *)    | ArrayLength of reg * reg
         (* 22 *)    | NewInstance of reg * uint16
         (* 23 *)    | NewArray of reg * reg * uint16
-        (* 24 *)    (*| FilledNewArray of *) //TODO #7
+        (* 24 *)    | FilledNewArray of (unibble * uint16 * reg * reg * reg * reg * reg )
         (* 25 *)    (*| FilledNewArrayRange of *) //TODO #8
         (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *) //TODO #9
 
