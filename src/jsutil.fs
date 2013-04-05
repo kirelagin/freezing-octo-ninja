@@ -30,6 +30,25 @@ module JsUtil =
         [<Inline "$arr.push($x)">]
         let push (arr : 'a array) (x : 'a) : unit = X<_>
 
+    module ObjectMap =
+        type ObjectMap<'k, 'v> = class end
+
+        [<Inline "{}">]
+        let empty<'k, 'v> : ObjectMap<'k, 'v> = X<_>
+
+        [<Inline "$m[$k] = $v">]
+        let update<'k, 'v> (m : ObjectMap<'k, 'v>) (k : 'k) (v : 'v) : unit = X<_>
+
+        [<Inline "$m[$k]">]
+        let get<'k, 'v> (m : ObjectMap<'k, 'v>) (k : 'k) : 'v = X<_>
+
+        [<JavaScript>]
+        let lookup<'k, 'v> (m: ObjectMap<'k, 'v>) (k : 'k) : 'v option =
+            if JavaScript.TypeOf (get m k) = JavaScript.Kind.Undefined then
+                None
+            else
+                Some <| get m k
+
     [<Name [| "gLong" |]>]
     [<Stub>]
     type GLong private () =
