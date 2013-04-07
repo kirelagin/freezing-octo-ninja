@@ -92,6 +92,6 @@ module JsUtil =
 
     [<JavaScript>]
     type JsValue =
-        | JsNumber of float64
-        | JsLong of GLong
+        | Js32 of int32
+        | Js64 of float64
         | JsRef of obj
