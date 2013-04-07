@@ -39,10 +39,14 @@ module ThreadWorker =
             | Some c -> cont c
 
 
-
     [<JavaScript>]
     type ThreadFrame (meth : Dex.Method, args : JsValue array) =
-        class end
+        let regs = Array.append (Array.create (int meth.RegistersSize - args.Length) (JsRef null)) args
+        let mutable ret : JsValue option = None
+
+        member this.Return (r : JsValue) = ret <- Some r
+        member this.GetReg (i : uint16) = regs.[int i]
+        member this.SetReg (i: uint16, v : JsValue) = regs.[int i] <- v
 
     [<JavaScript>]
     let frames : ThreadFrame array = [| |]
