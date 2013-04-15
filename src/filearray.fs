@@ -87,9 +87,9 @@ module FileArray =
             uint32 <| n.Get(0uL) //TODO #4
         member this.GetInt64 () : int32 * int32 =
             (this.GetInt32 (), this.GetInt32 ())
-        member this.GetInt64Var (given : int) : int32 * int32 =
+        member this.GetInt64Var (given : int) : GLong =
             let n = new Int32Array((new Uint8Array(this.GetBytesVar given 8 true)).Buffer)
-            (int32 <| n.Get(0uL), int32 <| n.Get(1uL)) //TODO #4
+            GLong.FromBits(As<int32>(n.Get(0uL)), As<int32>(n.Get(1uL))) //TODO #4
 
         member this.GetFloatVar (given : int) : float32 = //TODO #3
             let n = new Float32Array((new Uint8Array(this.GetBytesVar given 4 false)).Buffer)

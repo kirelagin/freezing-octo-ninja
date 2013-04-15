@@ -201,13 +201,13 @@ module Dex =
             let value_arg = (value_tag >>> 5) &&& 0x07uy
             let value_type = value_tag &&& 0x1Fuy
             match value_type with
-                | 0x00uy -> JsNumber << float64 <| stream.GetByte ()
-                | 0x02uy -> JsNumber << float64 <| stream.GetInt16Var (int value_arg + 1)
-                | 0x03uy -> JsNumber << float64 <| stream.GetUInt16Var (int value_arg + 1)
-                | 0x04uy -> JsNumber << float64 <| stream.GetInt32Var (int value_arg + 1)
-                | 0x06uy -> JsLong << GLong.FromBits <| stream.GetInt64Var (int value_arg + 1)
-                | 0x10uy -> JsNumber << float64 <| stream.GetFloatVar (int value_arg + 1)
-                | 0x11uy -> JsNumber << float64 <| stream.GetDoubleVar (int value_arg + 1)
+                | 0x00uy -> Store.storeInt << int32 <| stream.GetByte ()
+                | 0x02uy -> Store.storeInt << int32 <| stream.GetInt16Var (int value_arg + 1)
+                | 0x03uy -> Store.storeInt << int32 <| stream.GetUInt16Var (int value_arg + 1)
+                | 0x04uy -> Store.storeInt << int32 <| stream.GetInt32Var (int value_arg + 1)
+                | 0x06uy -> Store.storeLong <| stream.GetInt64Var (int value_arg + 1)
+                | 0x10uy -> Store.storeFloat <| stream.GetFloatVar (int value_arg + 1)
+                | 0x11uy -> Store.storeDouble <| stream.GetDoubleVar (int value_arg + 1)
                 | 0x17uy -> JsRef << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
                 | 0x18uy -> JsRef << As<obj> <| dexf.Types.[int <| stream.GetUInt32Var (int value_arg + 1)]
                 | 0x19uy -> JsRef << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
@@ -216,7 +216,7 @@ module Dex =
                 | 0x1Cuy -> JsRef << As<obj> <| DexFile.Read_encoded_array stream dexf
                 | 0x1Duy -> failwith "Annotations are not supported" //TODO #5
                 | 0x1Euy -> JsRef null
-                | 0x1Fuy -> JsNumber << float64 <| value_arg
+                | 0x1Fuy -> Store.storeInt << int32 <| value_arg
                 | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()
 
         static member private Read_instructions stream size dexf =
