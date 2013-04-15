@@ -174,7 +174,7 @@ module ByteCode =
 
         let read12x (stream : FileArray.DexFileArray) : reg * reg =
             let ba = stream.GetByte ()
-            (reg << nibble <| ba, reg << nibble <| ba >>> 4)
+            (reg << nibble <| ba, reg << nibble <| (ba >>> 4))
         let read11n (stream : FileArray.DexFileArray) : reg * nibble =
             let ba = stream.GetByte ()
             (reg << nibble <| ba, nibble <| ba >>> 4)
@@ -206,13 +206,13 @@ module ByteCode =
 
         let read22t (stream : FileArray.DexFileArray) : reg * reg * int16 =
             let ba = stream.GetByte ()
-            (reg << unibble <| ba, reg << unibble <| ba >>> 4, stream.GetInt16 ())
+            (reg << unibble <| ba, reg << unibble <| (ba >>> 4), stream.GetInt16 ())
         let read22s (stream : FileArray.DexFileArray) : reg * reg * int16 =
             let ba = stream.GetByte ()
-            (reg << unibble <| ba, reg << unibble <| ba >>> 4, stream.GetInt16 ())
+            (reg << unibble <| ba, reg << unibble <| (ba >>> 4), stream.GetInt16 ())
         let read22c (stream : FileArray.DexFileArray) : reg * reg * uint16 =
             let ba = stream.GetByte ()
-            (reg << unibble <| ba, reg << unibble <| ba >>> 4, stream.GetUInt16 ())
+            (reg << unibble <| ba, reg << unibble <| (ba >>> 4), stream.GetUInt16 ())
 
         let read30t (stream : FileArray.DexFileArray) : int32 =
             stream.GetInt32 ()
@@ -232,7 +232,7 @@ module ByteCode =
             let meth = stream.GetUInt16 ()
             let fe = stream.GetByte ()
             let dc = stream.GetByte ()
-            (unibble <| ag >>> 4, meth, reg <| unibble dc, reg << unibble <| dc >>> 4, reg <| unibble fe, reg << unibble <| fe >>> 4, reg <| unibble ag)
+            (unibble <| ag >>> 4, meth, reg <| unibble dc, reg << unibble <| (dc >>> 4), reg <| unibble fe, reg << unibble <| (fe >>> 4), reg <| unibble ag)
 
         let read3rc (stream : FileArray.DexFileArray) : uint8 * uint16 * reg =
             (stream.GetByte (), stream.GetUInt16 (), reg <| stream.GetUInt16 ())
