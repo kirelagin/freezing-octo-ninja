@@ -58,16 +58,30 @@ module ThreadWorker =
     
         member this.Interpret (i : uint16) (cont : unit -> unit) =
             if int i >= meth.Insns.Length then cont () else
-            let next () = this.Interpret (i + 1us) cont
+            let goto t = this.Interpret t cont
+            let next () = goto (i + 1us)
             let ins = meth.Insns.[int i]
             match ins with
                 | Nop () -> next ()
+
                 | Move (r1, r2) -> this.SetReg(r1, this.GetReg r2); next ()
                 | MoveResult r -> this.SetReg(r, thread.LastResult); next ()
                 //| MoveException //TODO #10
+
                 | ReturnVoid () -> thread.Return <| None
                 | Return r -> thread.Return <| Some (this.GetReg r)
-                | Const4 (r, v) -> this.SetReg (r, Js32 << int32 <| v); next ()
-                | Const16 (r, v) -> this.SetReg (r, Js32 << int32 <| v); next ()
-                | Const (r, v) -> this.SetReg (r, Js32 <| v); next ()
-                | ConstHigh16 (r, v) -> this.SetReg (r, Js32 (int32 v <<< 16)); next ()
+
+                | Const4 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
+                | Const16 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
+                | Const (r, v) -> this.SetReg (r, Store.storeInt <| v); next ()
+                | ConstHigh16 (r, v) -> this.SetReg (r, Store.storeInt (int32 v <<< 16)); next ()
+                | ConstWide16 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt << int32 <| v); next ()
+                | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
+                | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v)
+                | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16))
+                //| ConstString (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
+                //| ConstStringJumbo (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
+                //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
+
+                //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message
+                //| MonitorExit r -> this.GetReg r // TODO: send monitor-enter message
