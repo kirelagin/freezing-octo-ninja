@@ -173,12 +173,12 @@ module Dex =
                     else
                         [| |]
 
-                Array.push dexf.Classes <| new Class(dexf.Types.[int32 class_idx], access_flags,
-                                                    (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
-                                                    Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
-                                                    (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
-                                                    static_fields, instance_fields, direct_methods, virtual_methods,
-                                                    static_values)
+                Array.push dexf.Classes <| Class.New(dexf.Types.[int32 class_idx], access_flags,
+                                                     (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
+                                                     Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
+                                                     (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
+                                                     static_fields, instance_fields, direct_methods, virtual_methods,
+                                                     static_values)
                 stream.Seek next_class_off |> ignore
 
         static member private Read_type_list stream offset =
@@ -488,6 +488,7 @@ module Dex =
      [<JavaScript>]
      Type (descriptor : string) =
         member this.Descriptor = descriptor
+        member val Cls : Class option = None with get, set
         override this.ToString () = descriptor
 
     and
@@ -496,6 +497,10 @@ module Dex =
         member this.Shorty = shorty
         member this.ReturnType = return_type
         member this.Parameters = parameters
+        override p1.Equals(p2) =
+            match p2 with
+            | :? Proto as p2 -> p1.ReturnType= p2.ReturnType && p1.Parameters = p2.Parameters
+            | _ -> false
         override this.ToString () =
             "(" + String.concat ", " (Array.map (fun t -> t.ToString ()) parameters) + ") -> " + return_type.ToString () 
     and
@@ -522,15 +527,21 @@ module Dex =
             name + " : " + proto.ToString()
     and
      [<JavaScript>]
-     Class (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
-            source_file : string option,
-            static_fields : Field array, instance_fields : Field array, direct_methods : Method array, virual_methods : Method array,
-            static_values : JsValue array) =
+     Class private (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
+                    source_file : string option,
+                    static_fields : Field array, instance_fields : Field array, direct_methods : Method array, virtual_methods : Method array,
+                    static_values : JsValue array) =
+        static member New (dclass, access_flags, superclass, interfaces, source_file, static_fields, instance_fields, direct_methods, virtual_methods, static_values) =
+            let c = new Class(dclass, access_flags, superclass, interfaces, source_file, static_fields, instance_fields, direct_methods, virtual_methods, static_values)
+            dclass.Cls <- Some c
+            c
+
         member this.Class = dclass
         //TODO #6 (access flags)
         member this.Super = superclass
         member this.Interfaces = interfaces
         member this.SourceFile = source_file
+        member this.VirtualMethods = virtual_methods
         //TODO #5 (annotations)
         //TODO #2 (static_values)
         override this.ToString () =
