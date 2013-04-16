@@ -71,7 +71,7 @@ module Dex =
             stream.Seek offset |> ignore
             for i in {1..(int32 size)} do
                 let descriptor_idx = stream.GetUInt32 ()
-                Array.push dexf.Types <| new Type(dexf.Strings.[int32 descriptor_idx])
+                Array.push dexf.Types <| Type.Mew(dexf.Strings.[int32 descriptor_idx])
 
         static member private Read_proto_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -79,8 +79,8 @@ module Dex =
                 let shorty_idx = stream.GetUInt32 ()
                 let return_type_idx = stream.GetUInt32 ()
                 let parameters_off = stream.GetUInt32 ()
-                Array.push dexf.Protos <| new Proto(dexf.Strings.[int32 shorty_idx], dexf.Types.[int32 return_type_idx],
-                                                   Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream parameters_off)
+                Array.push dexf.Protos <| Proto.Mew(dexf.Strings.[int32 shorty_idx], dexf.Types.[int32 return_type_idx],
+                                                    Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream parameters_off)
 
         static member private Read_field_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -88,7 +88,8 @@ module Dex =
                 let class_idx = stream.GetUInt16 ()
                 let type_idx = stream.GetUInt16 ()
                 let name_idx = stream.GetUInt32 ()
-                Array.push dexf.Fields <| new Field(dexf.Types.[int32 class_idx], dexf.Types.[int32 type_idx], dexf.Strings.[int32 name_idx])
+                let f = Field()
+                Array.push dexf.Fields <| Field.Mew(dexf.Types.[int32 class_idx], dexf.Types.[int32 type_idx], dexf.Strings.[int32 name_idx])
 
         static member private Read_method_ids stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -96,7 +97,7 @@ module Dex =
                 let class_idx = stream.GetUInt16 ()
                 let proto_idx = stream.GetUInt16 ()
                 let name_idx = stream.GetUInt32 ()
-                Array.push dexf.Methods <| new Method(dexf.Types.[int32 class_idx], dexf.Protos.[int32 proto_idx], dexf.Strings.[int32 name_idx])
+                Array.push dexf.Methods <| Method.Mew(dexf.Types.[int32 class_idx], dexf.Protos.[int32 proto_idx], dexf.Strings.[int32 name_idx])
 
         static member private Read_class_defs stream (size, offset) dexf =
             stream.Seek offset |> ignore
@@ -487,34 +488,66 @@ module Dex =
     and
      [<JavaScript>]
      Type =
-        val mutable desriptor : string
+        //val mutable desriptor : string
+        [<DefaultValue>] val mutable desriptor : string
         [<DefaultValue>] val mutable cls : Class
-        new (descriptor0) = { desriptor = descriptor0 }
+        //new (descriptor0) = { desriptor = descriptor0 }
+        new () = {} //TODO #14
+        static member Mew (descriptor0) =
+            let t = Type()
+            t.desriptor <- descriptor0
+            t
     and
      [<JavaScript>]
      Proto =
-        val mutable shorty : string
-        val mutable return_type : Type
-        val mutable parameters : Type array
-        new (shorty0, return_type0, parameters0) = { shorty = shorty0; return_type = return_type0; parameters = parameters0 }
+        //val mutable shorty : string
+        //val mutable return_type : Type
+        //val mutable parameters : Type array
+        [<DefaultValue>] val mutable shorty : string
+        [<DefaultValue>] val mutable return_type : Type
+        [<DefaultValue>] val mutable parameters : Type array
+        //new (shorty0, return_type0, parameters0) = { shorty = shorty0; return_type = return_type0; parameters = parameters0 }
+        new () = {} //TODO #14
+        static member Mew (shorty0, return_type0, parameters0) =
+            let p = Proto()
+            p.shorty <- shorty0
+            p.return_type <- return_type0
+            p.parameters <- parameters0
+            p
     and
      [<JavaScript>]
      Field =
-        val mutable dtype : Type
-        val mutable name : string
+        //val mutable dtype : Type
+        //val mutable name : string
+        [<DefaultValue>] val mutable dtype : Type
+        [<DefaultValue>] val mutable name : string
         [<DefaultValue>] val mutable access_flags : uint32
-        new (dclass0, dtype0, name0) = { dtype = dtype0; name = name0 }
+        //new (dclass0, dtype0, name0) = { dtype = dtype0; name = name0 }
+        new () = {} //TODO #14
+        static member Mew (dclass0, dtype0, name0) =
+            let f = Field()
+            f.dtype <- dtype0
+            f.name <- name0
+            f
     and
      [<JavaScript>]
      Method =
-        val mutable proto : Proto
-        val mutable name : string
+        //val mutable proto : Proto
+        //val mutable name : string
+        [<DefaultValue>] val mutable proto : Proto
+        [<DefaultValue>] val mutable name : string
         [<DefaultValue>] val mutable access_flags : uint32
         [<DefaultValue>] val mutable registers_size : uint16
         [<DefaultValue>] val mutable ins_size : uint16
         [<DefaultValue>] val mutable outs_size : uint16
         [<DefaultValue>] val mutable insns : Instruction array
-        new (dclass0, proto0, name0) = { proto = proto0; name = name0 }
+        //new (dclass0, proto0, name0) = { proto = proto0; name = name0 }
+        new () = {} //TODO #14
+        static member Mew (dclass0, proto0, name0) =
+            let m = Method()
+            m.proto <- proto0
+            m.name <- name0
+            m
     and
      [<JavaScript>]
      Class private (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
