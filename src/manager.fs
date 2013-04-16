@@ -1,6 +1,7 @@
 namespace Dalvik
 
 module Manager =
+    open System.Collections.Generic
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
     open Shared
@@ -13,7 +14,7 @@ module Manager =
         dexf <- DexLoader.DexFile.Read bytes
 
     [<JavaScript>]
-    type VMObject = VMObj of Dex.Class * ObjectMap.ObjectMap<uint16, JsValue>
+    type VMObject = VMObj of Dex.Class * Dictionary<uint16, JsValue>
 
     [<JavaScript>]
     let heap : VMObject array = [| |]
@@ -26,7 +27,7 @@ module Manager =
 
     [<JavaScript>]
     let createInstance (cls : Dex.Class) =
-        Array.push heap <| VMObj (cls, ObjectMap.empty)
+        Array.push heap <| VMObj (cls, Dictionary ())
         heap.Length - 1
 
     [<JavaScript>]

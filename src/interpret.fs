@@ -1,6 +1,7 @@
 namespace Dalvik
 
 module ThreadWorker =
+    open System.Collections.Generic
     open IntelliFactory.WebSharper
     open Shared
     open Dex
@@ -26,18 +27,17 @@ module ThreadWorker =
             cont <| cacheTypes.[int idx] // TODO: int convertion sucks
 
     [<JavaScript>]
-    let cacheClasses : ObjectMap.ObjectMap<Dex.Type, Dex.Class> = ObjectMap.empty
+    let cacheClasses : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
 
     [<JavaScript>]
     let getClass (descriptor : Dex.Type, cont : Dex.Class -> unit) =
-        match ObjectMap.lookup cacheClasses descriptor with
-            | None -> requestResource (RequestClass descriptor, fun r ->
-                        match r with
-                            | ProvideClass c ->
-                                ObjectMap.update cacheClasses descriptor c
-                                cont c
-                            | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
-            | Some c -> cont c
+        if cacheClasses.ContainsKey descriptor then cont (cacheClasses.[descriptor]) else
+        requestResource (RequestClass descriptor, fun r ->
+            match r with
+                | ProvideClass c ->
+                    cacheClasses.Add (descriptor, c)
+                    cont c
+                | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
 
     [<JavaScript>]
     let getDirectMethod (idx : uint16) (cont : Dex.Method -> unit) =
