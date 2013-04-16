@@ -2,13 +2,15 @@ namespace Dalvik
 
 module Manager =
     open IntelliFactory.WebSharper
+    open IntelliFactory.WebSharper.Html5
     open Shared
 
     [<JavaScript>]
     let mutable dexf : Dex.DexFile = As<Dex.DexFile> null //HACK!!!
 
     [<JavaScript>]
-    let init (d : Dex.DexFile) = dexf <- d
+    let init (bytes : ArrayBuffer) =
+        dexf <- Dex.DexFile.Read bytes
 
     [<JavaScript>]
     type VMObject = VMObj of Dex.Class * ObjectMap.ObjectMap<uint16, JsValue>

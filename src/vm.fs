@@ -6,4 +6,4 @@ module VM =
 
     [<JavaScript>]
     let start (bytes : ArrayBuffer) =
-        Dex.DexFile.Read bytes
+        ()

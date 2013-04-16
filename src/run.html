@@ -21,17 +21,26 @@
         <output id="list"></output>
 
         <script>
-            var f;
             function handleFileSelect(evt) {
                 var file = evt.target.files[0];
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    f = Dalvik.VM.start(e.target.result);
+                    var bytes = e.target.result;
+                    Dalvik.Manager.init(bytes);
                 }
                 reader.readAsArrayBuffer(file);
             }
 
-          document.getElementById('files').addEventListener('change', handleFileSelect, false);
+            document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+            function spawnThread() {
+                w = new Worker('thread.js');
+                w.onmessage = function(e) {
+                    var reply = Dalvik.Manager.processRequest(e.data);
+                    w.postMessage(reply);
+                }
+                return w;
+            }
         </script>
 
     </body

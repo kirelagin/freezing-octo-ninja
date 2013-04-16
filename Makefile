@@ -23,7 +23,7 @@ INPUT := src/fsutil.fs src/jsutil.fs src/filearray.fs src/bytecode.fs src/dex.fs
 ALL_ASSEMBLIES := $(foreach kind,DOTNET FSHARP WEBSHARPER,$(ASSEMBLIES_$(kind):%=$(ASSEMBLIES_DIR_$(kind))/%.dll))
 
 
-build : build/output.js build/run.html build/gLong.js build/WebSharper/
+build : build/output.js build/run.html build/manager.js build/thread.js build/gLong.js build/WebSharper/
 
 build/all.dll : $(INPUT)
 	fsharpc --target:library --noframework $(ALL_ASSEMBLIES:%=-r:%) -o:$@ $^
@@ -33,6 +33,12 @@ build/output.js : build/all.dll
 	rm /tmp/useless.dll
 
 build/run.html : src/run.html
+	rsync -p $< $@
+
+build/manager.js : src/manager.js
+	rsync -p $< $@
+
+build/thread.js : src/thread.js
 	rsync -p $< $@
 
 build/gLong.js : vendor/gLong.js
