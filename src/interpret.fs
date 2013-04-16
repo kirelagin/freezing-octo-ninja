@@ -53,6 +53,13 @@ module ThreadWorker =
                 | ProvideMethod m -> cont m
                 | _ -> failwith <| "Unexpected reply. I need a Method but got a " + r.ToString ())
 
+    [<JavaScript>]
+    let createInstance (typeidx : uint16) (cont : dref -> unit) =
+        requestResource (CreateInstance typeidx, fun r ->
+            match r with
+                | ProvideInstance r -> cont r
+                | _ -> failwith <| "Unexpected reply. I need an Instance but got a " + r.ToString ())
+
 
     [<JavaScript>]
     type Thread () =
