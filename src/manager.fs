@@ -6,11 +6,11 @@ module Manager =
     open Shared
 
     [<JavaScript>]
-    let mutable dexf : Dex.DexFile = As<Dex.DexFile> null //HACK!!!
+    let mutable dexf : DexLoader.DexFile = As<DexLoader.DexFile> null //HACK!!!
 
     [<JavaScript>]
     let init (bytes : ArrayBuffer) =
-        dexf <- Dex.DexFile.Read bytes
+        dexf <- DexLoader.DexFile.Read bytes
 
     [<JavaScript>]
     type VMObject = VMObj of Dex.Class * ObjectMap.ObjectMap<uint16, JsValue>

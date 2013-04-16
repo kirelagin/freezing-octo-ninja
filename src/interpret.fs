@@ -3,7 +3,7 @@ namespace Dalvik
 module ThreadWorker =
     open IntelliFactory.WebSharper
     open Shared
-    open ByteCode
+    open Dex
 
     // All kinds of communication with shared resources manager
 
