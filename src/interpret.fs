@@ -16,13 +16,15 @@ module ThreadWorker =
 
     [<JavaScript>]
     let getClass (descriptor : Dex.Type, cont : Dex.Class -> unit) =
-        if cacheClasses.ContainsKey descriptor then cont (cacheClasses.[descriptor]) else
-        requestResource (RequestClass descriptor, fun r ->
-            match r with
-                | ProvideClass c ->
-                    cacheClasses.Add (descriptor, c)
-                    cont c
-                | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
+        match Dictionary.tryGet cacheClasses descriptor with
+        | Some c -> cont c
+        | None ->
+            requestResource (RequestClass descriptor, fun r ->
+                match r with
+                    | ProvideClass c ->
+                        cacheClasses.Add (descriptor, c)
+                        cont c
+                    | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
 
     [<JavaScript>]
     let getVirtualMethod (refr : dref, name : string, proto : Proto) (cont : Dex.Method -> unit) =
