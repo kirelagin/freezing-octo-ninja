@@ -10,12 +10,15 @@ module Manager =
     let library : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
 
     [<JavaScript>]
+    let loadedFiles : DexLoader.DexFile array = [| |]
+
+    [<JavaScript>]
     let registerClass (cls : Dex.Class) =
         library.Add(cls.dclass, cls)
 
     [<JavaScript>]
     let loadDex (bytes : ArrayBuffer) =
-        DexLoader.DexFile.Read bytes registerClass
+        Array.push loadedFiles <| DexLoader.DexFile.Read bytes registerClass
 
     [<JavaScript>]
     let init = loadDex
