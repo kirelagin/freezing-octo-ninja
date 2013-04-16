@@ -6,7 +6,7 @@ module ByteCode =
 
     // 4 bits
     type nibble = sbyte
-    [<Inline "(new Int8Array([n << 4]))[0] >> 4">]
+    [<Inline "(new Int8Array([$n << 4]))[0] >> 4">]
     let nibble (n : byte) : nibble = X<_>
     // Unsigned 4 bitw
     type unibble = byte
@@ -177,7 +177,7 @@ module ByteCode =
             (reg << nibble <| ba, reg << nibble <| (ba >>> 4))
         let read11n (stream : FileArray.DexFileArray) : reg * nibble =
             let ba = stream.GetByte ()
-            (reg << nibble <| ba, nibble <| ba >>> 4)
+            (reg << nibble <| ba, nibble <| (ba >>> 4))
 
         let read11x (stream : FileArray.DexFileArray) : reg =
             reg <| stream.GetByte ()
@@ -232,7 +232,7 @@ module ByteCode =
             let meth = stream.GetUInt16 ()
             let fe = stream.GetByte ()
             let dc = stream.GetByte ()
-            (unibble <| ag >>> 4, meth, reg <| unibble dc, reg << unibble <| (dc >>> 4), reg <| unibble fe, reg << unibble <| (fe >>> 4), reg <| unibble ag)
+            (unibble <| (ag >>> 4), meth, reg <| unibble dc, reg << unibble <| (dc >>> 4), reg <| unibble fe, reg << unibble <| (fe >>> 4), reg <| unibble ag)
 
         let read3rc (stream : FileArray.DexFileArray) : uint8 * uint16 * reg =
             (stream.GetByte (), stream.GetUInt16 (), reg <| stream.GetUInt16 ())
