@@ -36,11 +36,11 @@ module Manager =
         t.cls
 
     [<JavaScript>]
-    let resolveMethod (cls : Dex.Class) (meth : Dex.Method) =
+    let resolveMethod (cls : Dex.Class) (name : string) (proto : Dex.Proto) =
         let c = ref cls
         let m = ref None
         while (!m).IsNone do
-            m := Array.tryFind (fun (m : Dex.Method) -> meth.name = m.name && meth.proto = m.proto) ((!c).virtual_methods)
+            m := Array.tryFind (fun (m : Dex.Method) -> m.name = name && m.proto = proto) ((!c).virtual_methods)
             if (!m).IsNone then
                 c := match (!c).super with
                      | Some t -> classOfType t
@@ -50,13 +50,10 @@ module Manager =
     [<JavaScript>]
     let processRequest (r : ResourceRequest) : ResourceReply =
         match r with
-        | RequestMethod midx ->
-            ProvideMethod dexf.Methods.[int midx]
-        | ResolveMethod (refr, midx) ->
+        | ResolveMethod (refr, name, proto) ->
             match dereference refr with
             | VMObj (cls, r) ->
-                let meth = dexf.Methods.[int midx]
-                let resolved = resolveMethod cls meth
+                let resolved = resolveMethod cls name proto
                 ProvideMethod resolved
-        | CreateInstance tidx ->
-            ProvideInstance << createInstance << classOfType <| dexf.Types.[int tidx]
+        | CreateInstance dtype ->
+            ProvideInstance << createInstance << classOfType <| dtype

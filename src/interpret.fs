@@ -12,21 +12,6 @@ module ThreadWorker =
     let requestResource (r : ResourceRequest, cont : ResourceReply -> unit) : unit = X<_>
 
     [<JavaScript>]
-    let cacheTypes : Dex.Type array = [| |]
-
-    [<JavaScript>]
-    let getType (idx : uint16) (cont : Dex.Type -> unit) =
-        if JavaScript.TypeOf cacheTypes.[int idx] = JavaScript.Kind.Undefined then // TODO: int convertion sucks. Use hashmap?
-            requestResource (RequestType idx, fun r ->
-                match r with
-                    | ProvideType t ->
-                        cacheTypes.[int idx] <- t // TODO: int convertion sucks
-                        cont t
-                    | _ -> failwith <| "Unexpected reply. I need a Type but got a " + r.ToString ())
-        else
-            cont <| cacheTypes.[int idx] // TODO: int convertion sucks
-
-    [<JavaScript>]
     let cacheClasses : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
 
     [<JavaScript>]
@@ -40,22 +25,15 @@ module ThreadWorker =
                 | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
 
     [<JavaScript>]
-    let getDirectMethod (idx : uint16) (cont : Dex.Method -> unit) =
-        requestResource (RequestMethod idx, fun r ->
+    let getVirtualMethod (refr : dref, name : string, proto : Proto) (cont : Dex.Method -> unit) =
+        requestResource (ResolveMethod (refr, name, proto), fun r ->
             match r with
                 | ProvideMethod m -> cont m
                 | _ -> failwith <| "Unexpected reply. I need a Method but got a " + r.ToString ())
 
     [<JavaScript>]
-    let getVirtualMethod (refr : dref, idx : uint16) (cont : Dex.Method -> unit) =
-        requestResource (ResolveMethod (refr, idx), fun r ->
-            match r with
-                | ProvideMethod m -> cont m
-                | _ -> failwith <| "Unexpected reply. I need a Method but got a " + r.ToString ())
-
-    [<JavaScript>]
-    let createInstance (typeidx : uint16) (cont : dref -> unit) =
-        requestResource (CreateInstance typeidx, fun r ->
+    let createInstance (dtype : Dex.Type) (cont : dref -> unit) =
+        requestResource (CreateInstance dtype, fun r ->
             match r with
                 | ProvideInstance r -> cont r
                 | _ -> failwith <| "Unexpected reply. I need an Instance but got a " + r.ToString ())

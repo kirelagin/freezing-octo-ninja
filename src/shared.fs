@@ -7,15 +7,12 @@ module Shared =
 
     [<JavaScript>]
     type ResourceRequest =
-        | RequestType of uint16
         | RequestClass of Dex.Type
-        | RequestMethod of uint16
-        | ResolveMethod of dref * uint16
-        | CreateInstance of uint16
+        | ResolveMethod of dref * string * Dex.Proto
+        | CreateInstance of Dex.Type
 
     [<JavaScript>]
     type ResourceReply =
-        | ProvideType of Dex.Type
         | ProvideClass of Dex.Class
         | ProvideMethod of Dex.Method
         | ProvideInstance of dref
