@@ -17,6 +17,7 @@ module Manager =
     let loadDex (bytes : ArrayBuffer) =
         DexLoader.DexFile.Read bytes registerClass
 
+    [<JavaScript>]
     let init = loadDex
 
     [<JavaScript>]
