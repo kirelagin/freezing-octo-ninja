@@ -5,7 +5,10 @@ module Manager =
     open Shared
 
     [<JavaScript>]
-    let dexf : Dex.DexFile = X<_>
+    let mutable dexf : Dex.DexFile = X<_>
+
+    [<JavaScript>]
+    let init (d : Dex.DexFile) = dexf <- d
 
     [<JavaScript>]
     type VMObject = VMObj of Dex.Class * ObjectMap.ObjectMap<uint16, JsValue>

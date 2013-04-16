@@ -39,6 +39,20 @@ module ThreadWorker =
                             | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
             | Some c -> cont c
 
+    [<JavaScript>]
+    let getDirectMethod (idx : uint16) (cont : Dex.Method -> unit) =
+        requestResource (RequestMethod idx, fun r ->
+            match r with
+                | ProvideMethod m -> cont m
+                | _ -> failwith <| "Unexpected reply. I need a Method but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let getVirtualMethod (refr : dref, idx : uint16) (cont : Dex.Method -> unit) =
+        requestResource (ResolveMethod (refr, idx), fun r ->
+            match r with
+                | ProvideMethod m -> cont m
+                | _ -> failwith <| "Unexpected reply. I need a Method but got a " + r.ToString ())
+
 
     [<JavaScript>]
     type Thread () =
