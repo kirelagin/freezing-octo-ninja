@@ -497,10 +497,11 @@ module Dex =
         member this.Shorty = shorty
         member this.ReturnType = return_type
         member this.Parameters = parameters
-        override p1.Equals(p2) =
+        override p1.Equals (p2) =
             match p2 with
             | :? Proto as p2 -> p1.ReturnType= p2.ReturnType && p1.Parameters = p2.Parameters
             | _ -> false
+        override p1.GetHashCode () = p1.ReturnType.GetHashCode () ^^^ p1.Parameters.GetHashCode ()
         override this.ToString () =
             "(" + String.concat ", " (Array.map (fun t -> t.ToString ()) parameters) + ") -> " + return_type.ToString () 
     and
