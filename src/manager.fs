@@ -5,7 +5,7 @@ module Manager =
     open Shared
 
     [<JavaScript>]
-    let mutable dexf : Dex.DexFile = X<_>
+    let mutable dexf : Dex.DexFile = As<Dex.DexFile> null //HACK!!!
 
     [<JavaScript>]
     let init (d : Dex.DexFile) = dexf <- d
