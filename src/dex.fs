@@ -72,6 +72,7 @@ module Dex =
      Method =
         //val mutable proto : Proto
         //val mutable name : string
+        [<DefaultValue>] val mutable dclass : Type
         [<DefaultValue>] val mutable proto : Proto
         [<DefaultValue>] val mutable name : string
         [<DefaultValue>] val mutable access_flags : uint32
@@ -83,6 +84,7 @@ module Dex =
         new () = {} //TODO #14
         static member Mew (dclass0, proto0, name0) =
             let m = Method()
+            m.dclass <- dclass0
             m.proto <- proto0
             m.name <- name0
             m
