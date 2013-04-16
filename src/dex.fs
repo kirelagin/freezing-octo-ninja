@@ -550,22 +550,23 @@ module Dex =
             m
     and
      [<JavaScript>]
-     Class private (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
-                    source_file : string option,
-                    static_fields : Field array, instance_fields : Field array, direct_methods : Method array, virtual_methods : Method array,
-                    static_values : JsValue array) =
-        static member New (dclass, access_flags, superclass, interfaces, source_file, static_fields, instance_fields, direct_methods, virtual_methods, static_values) =
-            let c = new Class(dclass, access_flags, superclass, interfaces, source_file, static_fields, instance_fields, direct_methods, virtual_methods, static_values)
-            dclass.cls <- c
-            c
-
-        member this.Class = dclass
-        //TODO #6 (access flags)
-        member this.Super = superclass
-        member this.Interfaces = interfaces
-        member this.SourceFile = source_file
-        member this.VirtualMethods = virtual_methods
+     Class  =
+        [<DefaultValue>] val mutable dclass : Type
+        //TODO #6 (access_flags)
+        [<DefaultValue>] val mutable super : Type option
+        [<DefaultValue>] val mutable interfaces : Type array
+        [<DefaultValue>] val mutable direct_methods : Method array
+        [<DefaultValue>] val mutable virtual_methods : Method array
         //TODO #5 (annotations)
         //TODO #2 (static_values)
-        override this.ToString () =
-            "class " + dclass.ToString ()
+        //new (...)
+        new () = {} //TODO #14
+        static member New (dclass0, access_flags0, superclass0, interfaces0, source_file0, static_fields0, instance_fields0, direct_methods0, virtual_methods0, static_values0) =
+            let c = Class()
+            c.dclass <- dclass0
+            c.super <- superclass0
+            c.interfaces <- interfaces0
+            c.direct_methods <- direct_methods0
+            c.virtual_methods <- virtual_methods0
+            dclass0.cls <- c
+            c

@@ -39,9 +39,9 @@ module Manager =
         let c = ref cls
         let m = ref None
         while (!m).IsNone do
-            m := Array.tryFind (fun (m : Dex.Method) -> meth.name = m.name && meth.proto = m.proto) ((!c).VirtualMethods)
+            m := Array.tryFind (fun (m : Dex.Method) -> meth.name = m.name && meth.proto = m.proto) ((!c).virtual_methods)
             if (!m).IsNone then
-                c := match (!c).Super with
+                c := match (!c).super with
                      | Some t -> classOfType t
                      | None -> failwith "Method not found" //TODO #10 throw IncompatibleClassChangeError
         (!m).Value
