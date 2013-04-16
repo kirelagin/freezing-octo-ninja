@@ -98,7 +98,7 @@ module DexLoader =
         member val Methods : Method array = [| |]
         member val Classes : Class array = [| |]
 
-        static member Read (bytes : ArrayBuffer) =
+        static member Read (bytes : ArrayBuffer) (registerClass : Class -> unit) =
             let dexf = new DexFile ()
             let stream = FileArray.DexFileArray bytes
 
@@ -134,7 +134,7 @@ module DexLoader =
             DexFile.Read_proto_ids stream proto_ids dexf
             DexFile.Read_field_ids stream field_ids dexf
             DexFile.Read_method_ids stream method_ids dexf
-            DexFile.Read_class_defs stream class_defs dexf
+            DexFile.Read_class_defs stream class_defs dexf registerClass
 
             dexf
 
@@ -179,7 +179,7 @@ module DexLoader =
                 let name_idx = stream.GetUInt32 ()
                 Array.push dexf.Methods <| Method.Mew(dexf.Types.[int32 class_idx], dexf.Protos.[int32 proto_idx], dexf.Strings.[int32 name_idx])
 
-        static member private Read_class_defs stream (size, offset) dexf =
+        static member private Read_class_defs stream (size, offset) dexf registerClass =
             stream.Seek offset |> ignore
             for i in {1..(int32 size)} do
                 let class_idx = stream.GetUInt32 ()
@@ -254,12 +254,14 @@ module DexLoader =
                     else
                         [| |]
 
-                Array.push dexf.Classes <| Class.New(dexf.Types.[int32 class_idx], access_flags,
-                                                     (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
-                                                     Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
-                                                     (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
-                                                     static_fields, instance_fields, direct_methods, virtual_methods,
-                                                     static_values)
+                let c = Class.New(dexf.Types.[int class_idx], access_flags,
+                                  (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
+                                  Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
+                                  (if source_file_idx = NO_INDEX then None else Some dexf.Strings.[int32 source_file_idx]),
+                                  static_fields, instance_fields, direct_methods, virtual_methods,
+                                  static_values)
+                Array.push dexf.Classes c
+                registerClass c
                 stream.Seek next_class_off |> ignore
 
         static member private Read_type_list stream offset =

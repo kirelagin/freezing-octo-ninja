@@ -7,11 +7,17 @@ module Manager =
     open Shared
 
     [<JavaScript>]
-    let mutable dexf : DexLoader.DexFile = As<DexLoader.DexFile> null //HACK!!!
+    let library : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
 
     [<JavaScript>]
-    let init (bytes : ArrayBuffer) =
-        dexf <- DexLoader.DexFile.Read bytes
+    let registerClass (cls : Dex.Class) =
+        library.Add(cls.dclass, cls)
+
+    [<JavaScript>]
+    let loadDex (bytes : ArrayBuffer) =
+        DexLoader.DexFile.Read bytes registerClass
+
+    let init = loadDex
 
     [<JavaScript>]
     type VMObject = VMObj of Dex.Class * Dictionary<uint16, JsValue>
@@ -32,8 +38,9 @@ module Manager =
 
     [<JavaScript>]
     let classOfType (t : Dex.Type) =
-        if JavaScript.TypeOf t.cls = JavaScript.Kind.Undefined then failwith "Type without associated class!" else
-        t.cls
+        match Dictionary.tryGet library t with
+        | Some c -> c
+        | None -> failwith "Type without associated class!"
 
     [<JavaScript>]
     let resolveMethod (cls : Dex.Class) (name : string) (proto : Dex.Proto) =
@@ -50,6 +57,10 @@ module Manager =
     [<JavaScript>]
     let processRequest (r : ResourceRequest) : ResourceReply =
         match r with
+        | RequestClass (dtype) ->
+            match Dictionary.tryGet library dtype with
+            | Some c -> ProvideClass c
+            | None -> failwith <| "Unknown class: " + dtype.descriptor
         | ResolveMethod (refr, name, proto) ->
             match dereference refr with
             | VMObj (cls, r) ->

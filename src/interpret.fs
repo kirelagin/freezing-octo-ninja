@@ -15,14 +15,14 @@ module ThreadWorker =
     let cacheClasses : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
 
     [<JavaScript>]
-    let getClass (descriptor : Dex.Type, cont : Dex.Class -> unit) =
-        match Dictionary.tryGet cacheClasses descriptor with
+    let getClass (dtype : Dex.Type, cont : Dex.Class -> unit) =
+        match Dictionary.tryGet cacheClasses dtype with
         | Some c -> cont c
         | None ->
-            requestResource (RequestClass descriptor, fun r ->
+            requestResource (RequestClass dtype, fun r ->
                 match r with
                     | ProvideClass c ->
-                        cacheClasses.Add (descriptor, c)
+                        cacheClasses.Add (dtype, c)
                         cont c
                     | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
 

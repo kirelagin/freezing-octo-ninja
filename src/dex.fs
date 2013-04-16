@@ -27,13 +27,12 @@ module Dex =
      [<JavaScript>]
      Type =
         //val mutable desriptor : string
-        [<DefaultValue>] val mutable desriptor : string
-        [<DefaultValue>] val mutable cls : Class
+        [<DefaultValue>] val mutable descriptor : string
         //new (descriptor0) = { desriptor = descriptor0 }
         new () = {} //TODO #14
         static member Mew (descriptor0) =
             let t = Type()
-            t.desriptor <- descriptor0
+            t.descriptor <- descriptor0
             t
     and
      [<JavaScript>]
@@ -108,7 +107,6 @@ module Dex =
             c.interfaces <- interfaces0
             c.direct_methods <- direct_methods0
             c.virtual_methods <- virtual_methods0
-            dclass0.cls <- c
             c
     and
      [<JavaScript>]
