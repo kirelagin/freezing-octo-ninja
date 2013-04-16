@@ -31,16 +31,15 @@ module Manager =
 
     [<JavaScript>]
     let classOfType (t : Dex.Type) =
-        match t.Cls with
-        | Some c -> c
-        | None -> failwith "Type without associated class!"
+        if JavaScript.TypeOf t.cls = JavaScript.Kind.Undefined then failwith "Type without associated class!" else
+        t.cls
 
     [<JavaScript>]
     let resolveMethod (cls : Dex.Class) (meth : Dex.Method) =
         let c = ref cls
         let m = ref None
         while (!m).IsNone do
-            m := Array.tryFind (fun (m : Dex.Method) -> meth.Name = m.Name && meth.Proto = m.Proto) ((!c).VirtualMethods)
+            m := Array.tryFind (fun (m : Dex.Method) -> meth.name = m.name && meth.proto = m.proto) ((!c).VirtualMethods)
             if (!m).IsNone then
                 c := match (!c).Super with
                      | Some t -> classOfType t

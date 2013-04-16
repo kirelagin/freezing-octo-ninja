@@ -133,7 +133,7 @@ module Dex =
                         let access_flags = stream.GetULeb128 ()
                         field_idx <- field_idx + field_idx_diff
                         let field = dexf.Fields.[int32 field_idx]
-                        field.AccessFlags <- access_flags
+                        field.access_flags <- access_flags
                         Array.push arr field
 
                 let encoded_methods (count : uint32) (arr : Method array) =
@@ -144,16 +144,16 @@ module Dex =
                         let code_off = stream.GetULeb128 ()
                         method_idx <- method_idx + method_idx_diff
                         let meth = dexf.Methods.[int32 method_idx]
-                        meth.AccessFlags <- access_flags
+                        meth.access_flags <- access_flags
                         if code_off <> 0u then
                             let old_off = stream.Seek(code_off)
-                            meth.RegistersSize <- stream.GetUInt16 ()
-                            meth.InsSize <- stream.GetUInt16 ()
-                            meth.OutsSize <- stream.GetUInt16 ()
+                            meth.registers_size <- stream.GetUInt16 ()
+                            meth.ins_size <- stream.GetUInt16 ()
+                            meth.outs_size <- stream.GetUInt16 ()
                             let tries_size = stream.GetUInt16 ()
                             let debug_info_off = stream.GetUInt32 ()
                             let insns_size = stream.GetUInt32 ()
-                            meth.Insns <- DexFile.Read_instructions stream insns_size dexf
+                            meth.insns <- DexFile.Read_instructions stream insns_size dexf
                             if tries_size <> 0us && insns_size % 2u <> 0u then
                                 stream.GetUInt16 () |> ignore
                             //TODO #10 (read tries and handlers)
@@ -486,46 +486,35 @@ module Dex =
 
     and
      [<JavaScript>]
-     Type (descriptor : string) =
-        member this.Descriptor = descriptor
-        member val Cls : Class option = None with get, set
-        override this.ToString () = descriptor
-
+     Type =
+        val mutable desriptor : string
+        [<DefaultValue>] val mutable cls : Class
+        new (descriptor0) = { desriptor = descriptor0 }
     and
      [<JavaScript>]
-     Proto (shorty : string, return_type : Type, parameters : Type array) =
-        member this.Shorty = shorty
-        member this.ReturnType = return_type
-        member this.Parameters = parameters
-        override p1.Equals (p2) =
-            match p2 with
-            | :? Proto as p2 -> p1.ReturnType= p2.ReturnType && p1.Parameters = p2.Parameters
-            | _ -> false
-        override p1.GetHashCode () = p1.ReturnType.GetHashCode () ^^^ p1.Parameters.GetHashCode ()
-        override this.ToString () =
-            "(" + String.concat ", " (Array.map (fun t -> t.ToString ()) parameters) + ") -> " + return_type.ToString () 
+     Proto =
+        val mutable shorty : string
+        val mutable return_type : Type
+        val mutable parameters : Type array
+        new (shorty0, return_type0, parameters0) = { shorty = shorty0; return_type = return_type0; parameters = parameters0 }
     and
      [<JavaScript>]
-     Field (dclass : Type, dtype : Type, name : string) =
-        member this.Class = dclass
-        member this.Type = dtype
-        member this.Name = name
-        member val AccessFlags = 0u with get, set
-        override this.ToString () =
-            name + " : " + dclass.ToString()
+     Field =
+        val mutable dtype : Type
+        val mutable name : string
+        [<DefaultValue>] val mutable access_flags : uint32
+        new (dclass0, dtype0, name0) = { dtype = dtype0; name = name0 }
     and
      [<JavaScript>]
-     Method (dclass : Type, proto : Proto, name : string) =
-        member this.Class = dclass
-        member this.Proto = proto
-        member this.Name = name
-        member val AccessFlags = 0u with get, set
-        member val RegistersSize = 0us with get, set
-        member val InsSize = 0us with get, set
-        member val OutsSize = 0us with get, set
-        member val Insns : Instruction array = [| |] with get, set
-        override this.ToString () =
-            name + " : " + proto.ToString()
+     Method =
+        val mutable proto : Proto
+        val mutable name : string
+        [<DefaultValue>] val mutable access_flags : uint32
+        [<DefaultValue>] val mutable registers_size : uint16
+        [<DefaultValue>] val mutable ins_size : uint16
+        [<DefaultValue>] val mutable outs_size : uint16
+        [<DefaultValue>] val mutable insns : Instruction array
+        new (dclass0, proto0, name0) = { proto = proto0; name = name0 }
     and
      [<JavaScript>]
      Class private (dclass : Type, access_flags : uint32, superclass : Type option, interfaces : Type array,
@@ -534,7 +523,7 @@ module Dex =
                     static_values : JsValue array) =
         static member New (dclass, access_flags, superclass, interfaces, source_file, static_fields, instance_fields, direct_methods, virtual_methods, static_values) =
             let c = new Class(dclass, access_flags, superclass, interfaces, source_file, static_fields, instance_fields, direct_methods, virtual_methods, static_values)
-            dclass.Cls <- Some c
+            dclass.cls <- c
             c
 
         member this.Class = dclass

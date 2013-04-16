@@ -71,17 +71,17 @@ module ThreadWorker =
     and 
      [<JavaScript>]
         ThreadFrame (thread : Thread, meth : Dex.Method, args : JsValue array) =
-        let regs = Array.append (Array.create (int meth.RegistersSize - args.Length) (JsRef null)) args
+        let regs = Array.append (Array.create (int meth.registers_size - args.Length) (JsRef null)) args
 
         member this.Thread () = thread
         member this.GetReg (i : reg) = regs.[int i]
         member this.SetReg (i : reg, v : JsValue) = regs.[int i] <- v
     
         member this.Interpret (i : uint16) (cont : unit -> unit) =
-            if int i >= meth.Insns.Length then cont () else
+            if int i >= meth.insns.Length then cont () else
             let goto t = this.Interpret t cont
             let next () = goto (i + 1us)
-            let ins = meth.Insns.[int i]
+            let ins = meth.insns.[int i]
             match ins with
                 | Nop () -> next ()
 
