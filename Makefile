@@ -18,14 +18,14 @@ ASSEMBLIES_FSHARP := FSharp.Core
 ASSEMBLIES_WEBSHARPER := IntelliFactory.Formlet IntelliFactory.Html IntelliFactory.JavaScript IntelliFactory.Reactive IntelliFactory.WebSharper.Collections IntelliFactory.WebSharper.Control IntelliFactory.WebSharper.Core IntelliFactory.WebSharper IntelliFactory.WebSharper.Dom IntelliFactory.WebSharper.Ecma IntelliFactory.WebSharper.Formlet IntelliFactory.WebSharper.Html IntelliFactory.WebSharper.Html5 IntelliFactory.WebSharper.JQuery IntelliFactory.WebSharper.Sitelets IntelliFactory.WebSharper.Testing IntelliFactory.WebSharper.Web IntelliFactory.Xml
 
 # Order matters!
-INPUT := src/fsutil.fs src/jsutil.fs src/filearray.fs src/dex.fs src/dexloader.fs src/shared.fs src/interpret.fs src/manager.fs src/vm.fs
+INPUT := fsutil.fs jsutil.fs filearray.fs dex.fs dexloader.fs shared.fs interpret.fs manager.fs vm.fs
 
 ALL_ASSEMBLIES := $(foreach kind,DOTNET FSHARP WEBSHARPER,$(ASSEMBLIES_$(kind):%=$(ASSEMBLIES_DIR_$(kind))/%.dll))
 
 
 build : build/output.js build/run.html build/manager.js build/thread.js build/gLong.js build/WebSharper/
 
-build/all.dll : $(INPUT)
+build/all.dll : $(INPUT:%=src/%)
 	fsharpc --target:library --noframework $(ALL_ASSEMBLIES:%=-r:%) -o:$@ $^
 
 build/output.js : build/all.dll
