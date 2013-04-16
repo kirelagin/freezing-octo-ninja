@@ -134,20 +134,20 @@ module Dex =
         (* 17 *)    | ConstWide32 of reg * int32
         (* 18 *)    | ConstWide of reg * GLong
         (* 19 *)    | ConstWideHigh16 of reg * int16
-        (* 1a *)    | ConstString of reg * uint16
-        (* 1b *)    | ConstStringJumdo of reg * uint32
-        (* 1c *)    | ConstClass of reg * uint16
+        (* 1a *)    | ConstString of reg * string
+        (* 1b *)    | ConstStringJumdo of reg * string
+        (* 1c *)    | ConstClass of reg * Type
 
         (* 1d *)    | MonitorEnter of reg
         (* 1e *)    | MonitorExit of reg
 
-        (* 1f *)    | CheckCast of reg * uint16
-        (* 20 *)    | InstanceOf of reg * reg * uint16
+        (* 1f *)    | CheckCast of reg * Type
+        (* 20 *)    | InstanceOf of reg * reg * Type
         (* 21 *)    | ArrayLength of reg * reg
-        (* 22 *)    | NewInstance of reg * uint16
-        (* 23 *)    | NewArray of reg * reg * uint16
-        (* 24 *)    | FilledNewArray of (unibble * uint16 * reg * reg * reg * reg * reg )
-        (* 25 *)    | FilledNewArrayRange of (uint8 * uint16 * reg)
+        (* 22 *)    | NewInstance of reg * Type
+        (* 23 *)    | NewArray of reg * reg * Type
+        (* 24 *)    | FilledNewArray of (unibble * Type * reg * reg * reg * reg * reg )
+        (* 25 *)    | FilledNewArrayRange of (uint8 * Type * reg)
         (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *) //TODO #9
 
         (* 27 *)    | Throw of reg
@@ -170,21 +170,21 @@ module Dex =
         (* 4c *)    | AputWide of reg * reg * reg
 
         (* 52,
-           54-58 *) | Iget of reg * reg * uint16
-        (* 53 *)    | IgetWide of reg * reg * uint16
+           54-58 *) | Iget of reg * reg * Field
+        (* 53 *)    | IgetWide of reg * reg * Field
         (* 59,
-           5b-5f *) | Iput of reg * reg * uint16
-        (* 5a *)    | IputWide of reg * reg * uint16
+           5b-5f *) | Iput of reg * reg * Field
+        (* 5a *)    | IputWide of reg * reg * Field
 
         (* 60
-           62-66 *) | Sget of reg * uint16
-        (* 61 *)    | SgetWide of reg * uint16
+           62-66 *) | Sget of reg * Field
+        (* 61 *)    | SgetWide of reg * Field
         (* 67,
-           69-6d *) | Sput of reg * uint16
-        (* 68 *)    | SputWide of reg * uint16
+           69-6d *) | Sput of reg * Field
+        (* 68 *)    | SputWide of reg * Field
 
-        (* 6e-72 *) | Invoke of InvokeKind * (unibble * uint16 * reg * reg * reg * reg * reg)
-        (* 74-78 *) | InvokeRange of InvokeKind * (uint8 * uint16 * reg)
+        (* 6e-72 *) | Invoke of InvokeKind * (unibble * Method * reg * reg * reg * reg * reg)
+        (* 74-78 *) | InvokeRange of InvokeKind * (uint8 * Method * reg)
 
         (* 7b... *) | NegInt of reg * reg
                     | NotInt of reg * reg

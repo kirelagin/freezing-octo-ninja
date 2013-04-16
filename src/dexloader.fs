@@ -336,20 +336,20 @@ module DexLoader =
                     | 0x17uy -> ConstWide32 << OpFormat.read31i
                     | 0x18uy -> ConstWide << OpFormat.read51l
                     | 0x19uy -> ConstWideHigh16 << OpFormat.read21h
-                    | 0x1Auy -> ConstString << OpFormat.read21c
-                    | 0x1Buy -> ConstStringJumdo << OpFormat.read31c
-                    | 0x1Cuy -> ConstClass << OpFormat.read21c
+                    | 0x1Auy -> ConstString << Arrows.secondOf2 (Array.get dexf.Strings << int) << OpFormat.read21c
+                    | 0x1Buy -> ConstStringJumdo << Arrows.secondOf2 (Array.get dexf.Strings << int) << OpFormat.read31c
+                    | 0x1Cuy -> ConstClass << Arrows.secondOf2 (Array.get dexf.Types << int) << OpFormat.read21c
 
                     | 0x1Duy -> MonitorEnter << OpFormat.read11x
                     | 0x1Euy -> MonitorExit << OpFormat.read11x
 
-                    | 0x1Fuy -> CheckCast << OpFormat.read21c
-                    | 0x20uy -> InstanceOf << OpFormat.read22c
+                    | 0x1Fuy -> CheckCast << Arrows.secondOf2 (Array.get dexf.Types << int) << OpFormat.read21c
+                    | 0x20uy -> InstanceOf << Arrows.thirdOf3 (Array.get dexf.Types << int) << OpFormat.read22c
                     | 0x21uy -> ArrayLength << OpFormat.read12x
-                    | 0x22uy -> NewInstance << OpFormat.read21c
-                    | 0x23uy -> NewArray << OpFormat.read22c
-                    | 0x24uy -> FilledNewArray << OpFormat.read35c
-                    | 0x25uy -> FilledNewArrayRange << OpFormat.read3rc
+                    | 0x22uy -> NewInstance << Arrows.secondOf2 (Array.get dexf.Types << int) << OpFormat.read21c
+                    | 0x23uy -> NewArray << Arrows.thirdOf3 (Array.get dexf.Types << int) << OpFormat.read22c
+                    | 0x24uy -> FilledNewArray << Arrows.secondOf7 (Array.get dexf.Types << int) << OpFormat.read35c
+                    | 0x25uy -> FilledNewArrayRange << Arrows.secondOf3 (Array.get dexf.Types << int) << OpFormat.read3rc
                     (*| 0x26uy -> let (r, b) = OpFormat.read31t
                                 FillArrayData (reg r, ...read payload... *) //TODO #9
 
@@ -399,41 +399,41 @@ module DexLoader =
                     | 0x55uy
                     | 0x56uy
                     | 0x57uy
-                    | 0x58uy -> Iget << OpFormat.read22c
-                    | 0x53uy -> IgetWide << OpFormat.read22c
+                    | 0x58uy -> Iget << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
+                    | 0x53uy -> IgetWide << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
                     | 0x59uy
                     | 0x5Buy
                     | 0x5Cuy
                     | 0x5Duy
                     | 0x5Euy
-                    | 0x5Fuy -> Iput << OpFormat.read22c
-                    | 0x5Auy -> IputWide << OpFormat.read22c
+                    | 0x5Fuy -> Iput << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
+                    | 0x5Auy -> IputWide << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
 
                     | 0x60uy
                     | 0x62uy
                     | 0x63uy
                     | 0x64uy
                     | 0x65uy
-                    | 0x66uy -> Sget << OpFormat.read21c
-                    | 0x61uy -> SgetWide << OpFormat.read21c
+                    | 0x66uy -> Sget << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
+                    | 0x61uy -> SgetWide << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
                     | 0x67uy
                     | 0x69uy
                     | 0x6Auy
                     | 0x6Buy
                     | 0x6Cuy
-                    | 0x6Duy -> Sput << OpFormat.read21c
-                    | 0x68uy -> SputWide << OpFormat.read21c
+                    | 0x6Duy -> Sput << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
+                    | 0x68uy -> SputWide << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
 
-                    | 0x6Euy -> curry Invoke InvokeVirtual << OpFormat.read35c
-                    | 0x6Fuy -> curry Invoke InvokeSuper << OpFormat.read35c
-                    | 0x70uy -> curry Invoke InvokeDirect << OpFormat.read35c
-                    | 0x71uy -> curry Invoke InvokeStatic << OpFormat.read35c
-                    | 0x72uy -> curry Invoke InvokeInterface << OpFormat.read35c
-                    | 0x74uy -> curry InvokeRange InvokeVirtual << OpFormat.read3rc
-                    | 0x75uy -> curry InvokeRange InvokeSuper << OpFormat.read3rc
-                    | 0x76uy -> curry InvokeRange InvokeDirect << OpFormat.read3rc
-                    | 0x77uy -> curry InvokeRange InvokeStatic << OpFormat.read3rc
-                    | 0x78uy -> curry InvokeRange InvokeInterface << OpFormat.read3rc
+                    | 0x6Euy -> curry Invoke InvokeVirtual << Arrows.secondOf7 (Array.get dexf.Methods << int) << OpFormat.read35c
+                    | 0x6Fuy -> curry Invoke InvokeSuper << Arrows.secondOf7 (Array.get dexf.Methods << int) << OpFormat.read35c
+                    | 0x70uy -> curry Invoke InvokeDirect << Arrows.secondOf7 (Array.get dexf.Methods << int) << OpFormat.read35c
+                    | 0x71uy -> curry Invoke InvokeStatic << Arrows.secondOf7 (Array.get dexf.Methods << int) << OpFormat.read35c
+                    | 0x72uy -> curry Invoke InvokeInterface << Arrows.secondOf7 (Array.get dexf.Methods << int) << OpFormat.read35c
+                    | 0x74uy -> curry InvokeRange InvokeVirtual << Arrows.secondOf3 (Array.get dexf.Methods << int) << OpFormat.read3rc
+                    | 0x75uy -> curry InvokeRange InvokeSuper << Arrows.secondOf3 (Array.get dexf.Methods << int) << OpFormat.read3rc
+                    | 0x76uy -> curry InvokeRange InvokeDirect << Arrows.secondOf3 (Array.get dexf.Methods << int) << OpFormat.read3rc
+                    | 0x77uy -> curry InvokeRange InvokeStatic << Arrows.secondOf3 (Array.get dexf.Methods << int) << OpFormat.read3rc
+                    | 0x78uy -> curry InvokeRange InvokeInterface << Arrows.secondOf3 (Array.get dexf.Methods << int) << OpFormat.read3rc
 
                     | 0x7Buy -> NegInt << OpFormat.read12x
                     | 0x7Cuy -> NotInt << OpFormat.read12x
