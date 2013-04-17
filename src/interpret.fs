@@ -45,9 +45,23 @@ module ThreadWorker =
     type Thread () =
         let frames : ThreadFrame array = [| |]
         let mutable ret : JsValue option = None
-        member this.PushMethod (meth : Dex.Method, args : JsValue array) = Array.push frames <| new ThreadFrame (this, meth, args)
-        member this.Return (r : JsValue option) = ret <- r
-        member this.LastResult = match ret with | Some r -> r | None -> failwith "Can't 'move-result', no result"
+        member private this.PushMethod (meth : Dex.Method) (args : JsValue array) =
+            let frame = new ThreadFrame (this, meth, args)
+            Array.push frames <| frame
+            frame
+        member this.ExecuteMethod (meth : Dex.Method) (args : JsValue array) (cont : unit -> unit) =
+            (this.PushMethod meth args).Interpret 0us cont
+        member this.Return (r : JsValue option) (cont : unit -> unit) =
+            ret <- r
+            Array.pop frames
+            cont ()
+        member this.LastResult = match ret with
+                                 | Some r ->
+                                    ret <- None
+                                    r
+                                 | None -> failwith "Can't 'move-result', no result"
+        member this.Start (meth : Dex.Method, args : JsValue array) = this.ExecuteMethod meth args this.Finish
+        member this.Finish () = ()
     and 
      [<JavaScript>]
         ThreadFrame (thread : Thread, meth : Dex.Method, args : JsValue array) =
@@ -69,8 +83,8 @@ module ThreadWorker =
                 | MoveResult r -> this.SetReg(r, thread.LastResult); next ()
                 //| MoveException //TODO #10
 
-                | ReturnVoid () -> thread.Return <| None
-                | Return r -> thread.Return <| Some (this.GetReg r)
+                | ReturnVoid () -> thread.Return None cont
+                | Return r -> thread.Return (Some <| this.GetReg r) cont
 
                 | Const4 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
                 | Const16 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
@@ -78,8 +92,8 @@ module ThreadWorker =
                 | ConstHigh16 (r, v) -> this.SetReg (r, Store.storeInt (int32 v <<< 16)); next ()
                 | ConstWide16 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt << int32 <| v); next ()
                 | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
-                | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v)
-                | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16))
+                | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v); next ()
+                | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16)); next ()
                 //| ConstString (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
                 //| ConstStringJumbo (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
                 //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?

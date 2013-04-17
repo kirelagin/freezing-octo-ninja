@@ -32,6 +32,9 @@ module JsUtil =
     module Array =
         [<Inline "$arr.push($x)">]
         let push (arr : 'a array) (x : 'a) : unit = X<_>
+        
+        [<Inline "$arr.pop()">]
+        let pop (arr : 'a array) : unit = X<_>
 
     module Number =
         [<Inline "isFinite($v)">]
