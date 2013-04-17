@@ -40,7 +40,6 @@ module ThreadWorker =
                 | ProvideInstance r -> cont r
                 | _ -> failwith <| "Unexpected reply. I need an Instance but got a " + r.ToString ())
 
-
     [<JavaScript>]
     type Thread () =
         let frames : ThreadFrame array = [| |]
@@ -66,6 +65,7 @@ module ThreadWorker =
      [<JavaScript>]
         ThreadFrame (thread : Thread, meth : Dex.Method, args : JsValue array) =
         let regs = Array.append (Array.create (int meth.registers_size - args.Length) (JsRef null)) args
+        let thisclass = meth.dclass
 
         member this.Thread () = thread
         member this.GetReg (i : reg) = regs.[int i]
@@ -100,3 +100,9 @@ module ThreadWorker =
 
                 //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message
                 //| MonitorExit r -> this.GetReg r // TODO: send monitor-enter message
+
+    let mutable thread = None
+    let init (meth : Dex.Method,  args : JsValue array) =
+        let t = new Thread ()
+        thread <- Some t
+        t.ExecuteMethod meth args (fun () -> ())
