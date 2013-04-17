@@ -542,6 +542,9 @@ module DexLoader =
                     | 0xDDuy -> AndIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
                     | 0xDEuy -> OrIntLit   << Arrows.thirdOf3 int32 << OpFormat.read22b
                     | 0xDFuy -> XorIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xE0uy -> ShlIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xE1uy -> ShrIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xE2uy -> UshrIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
 
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()
                 ) stream

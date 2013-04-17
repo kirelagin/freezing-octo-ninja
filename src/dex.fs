@@ -248,4 +248,7 @@ module Dex =
                     | RemIntLit of reg * reg * int32
                     | AndIntLit of reg * reg * int32
                     | OrIntLit of reg * reg * int32
-        (* ...e2 *) | XorIntLit of reg * reg * int32
+                    | XorIntLit of reg * reg * int32
+                    | ShlIntLit of reg * reg * int32
+                    | ShrIntLit of reg * reg * int32
+        (* ...e2 *) | UshrIntLit of reg * reg * int32
