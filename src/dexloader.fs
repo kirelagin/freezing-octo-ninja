@@ -195,56 +195,58 @@ module DexLoader =
                 //TODO #5 (read annotations here)
 
                 // Reading class_data
-                stream.Seek class_data_off |> ignore
 
                 let static_fields : Field array = [| |]
                 let instance_fields : Field array = [| |]
                 let direct_methods : Method array = [| |]
                 let virtual_methods : Method array= [| |]
 
-                let static_fields_size = stream.GetULeb128 ()
-                let instance_fields_size = stream.GetULeb128 ()
-                let direct_methods_size = stream.GetULeb128 ()
-                let virtual_methods_size = stream.GetULeb128 ()
+                if class_data_off <> 0u then
+                    stream.Seek class_data_off |> ignore
 
-                let encoded_fields (count : uint32) (arr : Field array) =
-                    let mutable field_idx = 0u
-                    for i in {1..(int32 count)} do
-                        let field_idx_diff = stream.GetULeb128 ()
-                        let access_flags = stream.GetULeb128 ()
-                        field_idx <- field_idx + field_idx_diff
-                        let field = dexf.Fields.[int32 field_idx]
-                        field.access_flags <- access_flags
-                        Array.push arr field
+                    let static_fields_size = stream.GetULeb128 ()
+                    let instance_fields_size = stream.GetULeb128 ()
+                    let direct_methods_size = stream.GetULeb128 ()
+                    let virtual_methods_size = stream.GetULeb128 ()
 
-                let encoded_methods (count : uint32) (arr : Method array) =
-                    let mutable method_idx = 0u
-                    for i in {1..(int32 count)} do
-                        let method_idx_diff = stream.GetULeb128 ()
-                        let access_flags = stream.GetULeb128 ()
-                        let code_off = stream.GetULeb128 ()
-                        method_idx <- method_idx + method_idx_diff
-                        let meth = dexf.Methods.[int32 method_idx]
-                        meth.access_flags <- access_flags
-                        if code_off <> 0u then
-                            let old_off = stream.Seek(code_off)
-                            meth.registers_size <- stream.GetUInt16 ()
-                            meth.ins_size <- stream.GetUInt16 ()
-                            meth.outs_size <- stream.GetUInt16 ()
-                            let tries_size = stream.GetUInt16 ()
-                            let debug_info_off = stream.GetUInt32 ()
-                            let insns_size = stream.GetUInt32 ()
-                            meth.insns <- DexFile.Read_instructions stream insns_size dexf
-                            if tries_size <> 0us && insns_size % 2u <> 0u then
-                                stream.GetUInt16 () |> ignore
-                            //TODO #10 (read tries and handlers)
-                            stream.Seek old_off |> ignore
-                        Array.push arr meth
-                
-                encoded_fields static_fields_size static_fields
-                encoded_fields instance_fields_size instance_fields
-                encoded_methods direct_methods_size direct_methods
-                encoded_methods virtual_methods_size virtual_methods
+                    let encoded_fields (count : uint32) (arr : Field array) =
+                        let mutable field_idx = 0u
+                        for i in {1..(int32 count)} do
+                            let field_idx_diff = stream.GetULeb128 ()
+                            let access_flags = stream.GetULeb128 ()
+                            field_idx <- field_idx + field_idx_diff
+                            let field = dexf.Fields.[int32 field_idx]
+                            field.access_flags <- access_flags
+                            Array.push arr field
+
+                    let encoded_methods (count : uint32) (arr : Method array) =
+                        let mutable method_idx = 0u
+                        for i in {1..(int32 count)} do
+                            let method_idx_diff = stream.GetULeb128 ()
+                            let access_flags = stream.GetULeb128 ()
+                            let code_off = stream.GetULeb128 ()
+                            method_idx <- method_idx + method_idx_diff
+                            let meth = dexf.Methods.[int32 method_idx]
+                            meth.access_flags <- access_flags
+                            if code_off <> 0u then
+                                let old_off = stream.Seek(code_off)
+                                meth.registers_size <- stream.GetUInt16 ()
+                                meth.ins_size <- stream.GetUInt16 ()
+                                meth.outs_size <- stream.GetUInt16 ()
+                                let tries_size = stream.GetUInt16 ()
+                                let debug_info_off = stream.GetUInt32 ()
+                                let insns_size = stream.GetUInt32 ()
+                                meth.insns <- DexFile.Read_instructions stream insns_size dexf
+                                if tries_size <> 0us && insns_size % 2u <> 0u then
+                                    stream.GetUInt16 () |> ignore
+                                //TODO #10 (read tries and handlers)
+                                stream.Seek old_off |> ignore
+                            Array.push arr meth
+
+                    encoded_fields static_fields_size static_fields
+                    encoded_fields instance_fields_size instance_fields
+                    encoded_methods direct_methods_size direct_methods
+                    encoded_methods virtual_methods_size virtual_methods
 
                 // Reading static values
                 let static_values =
