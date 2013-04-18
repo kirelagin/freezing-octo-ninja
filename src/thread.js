@@ -29,4 +29,7 @@ IntelliFactory.Runtime.Start();
 //    manager.onmessage = unexpected;
 //}
 manager = self; // not literally `self`, but parent
-manager.onmessage = unexpected;
+manager.onmessage = function(e) {
+    Dalvik.ThreadWorker.init(e.data, []);
+    manager.onmessage = unexpected;
+}
