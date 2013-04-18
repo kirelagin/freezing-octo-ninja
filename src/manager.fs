@@ -4,6 +4,7 @@ module Manager =
     open System.Collections.Generic
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
+    open Dex
     open Shared
 
     [<JavaScript>]
@@ -24,7 +25,7 @@ module Manager =
     let init = loadDex
 
     [<JavaScript>]
-    type VMObject = VMObj of Dex.Class * Dictionary<uint16, JsValue>
+    type VMObject = VMObj of Dex.Class * Dictionary<uint16, RegValue>
 
     [<JavaScript>]
     let heap : VMObject array = [| |]

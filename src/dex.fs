@@ -2,6 +2,7 @@ namespace Dalvik
 
 module Dex =
     open IntelliFactory.WebSharper
+    open IntelliFactory.WebSharper.Html5
 
     // 4 bits
     type nibble = sbyte
@@ -15,6 +16,64 @@ module Dex =
     type reg = float64
     [<JavaScript>]
     let reg n : reg = float64 n
+
+    // Dalvi reference
+    type dref = int
+
+    [<JavaScript>]
+    type RegValue =
+        | Reg32 of int32
+        | Reg64 of GLong
+        | RegRef of dref
+        | RegAny of obj
+
+    [<JavaScript>]
+    module Store =
+        let loadInt (v : RegValue) = match v with
+                                        | Reg32 i -> i
+                                        | _ -> failwith "Trying to load an int from non-32-bit value"
+
+        let storeInt (i : int32) = Reg32 i
+
+        let loadLong (v : RegValue) = match v with
+                                        | Reg64 i -> i
+                                        | _ -> failwith "Trying to load a long from non-64-bit register"
+
+        let storeLong (i : GLong) = Reg64 i
+
+        let loadFloat (v : RegValue) = match v with
+                                        | Reg32 i -> (new Float32Array((new Int32Array([| As<int16>(i) |])).Buffer)).Get(0uL) //TODO #4
+                                        | _ -> failwith "Trying to load a float from non-32-bit-register"
+
+        let storeFloat (i : float32) = Reg32 << As<int32> <| (new Int32Array((new Float32Array([| i |])).Buffer)).Get(0uL) //TODO #4
+
+        let loadDouble (v : RegValue) = match v with
+                                        | Reg64 gl -> (new Float64Array((new Int32Array([| As<int16>(gl.GetHighBits()); As<int16>(gl.GetLowBits()) |])).Buffer)).Get(0uL) //TODO #4
+                                        | _ -> failwith "Trying to load a double from non-64-bit-register"
+
+        let storeDouble (i : float64) = let r = new Int32Array((new Float64Array([| i |])).Buffer)
+                                        Reg64 <| GLong.FromBits (As<int32>(r.Get(1uL)), As<int32>(r.Get(0uL))) //TODO #4
+
+
+    [<JavaScript>]
+    module Convert =
+        let intToLong (i : int32) : GLong = GLong.FromInt i
+        let intToFloat (i : int32) : float32 = (new Float32Array([| float32 i |])).Get(0uL)
+        let intToDouble (i : int32) : float64 = float64 i
+
+        let doubleToInt (i : float64) : int32 = if i > float64 System.Int32.MaxValue then System.Int32.MaxValue
+                                                elif i < float64 System.Int32.MinValue then System.Int32.MinValue
+                                                else int32 i
+        let doubleToLong (i : float64) : GLong = if i = infinity then GLong.MAX_VALUE elif i = -infinity then GLong.MIN_VALUE else GLong.FromNumber i
+        let doubleToFloat (i : float64) : float32 = (new Float32Array([| float32 i |])).Get(0uL) //TODO #11
+
+        let longToInt (i : GLong) : int32 = i.toInt()
+        let longToDouble (i : GLong) : float64 = i.toNumber()
+        let longToFloat (i : GLong) : float32 = longToDouble i |> doubleToFloat
+
+        let floatToDouble (i : float32) : float64 = float64 i
+        let floatToInt (i : float32) : int32 = floatToDouble i |> doubleToInt
+        let floatToLong(i : float32) : GLong = floatToDouble i |> doubleToLong
 
     type Bias = | LtBias | GtBias
     type Test = | Eq | Ne | Lt | Ge | Gt | Le
@@ -135,7 +194,6 @@ module Dex =
         (* 18 *)    | ConstWide of reg * GLong
         (* 19 *)    | ConstWideHigh16 of reg * int16
         (* 1a *)    | ConstString of reg * string
-        (* 1b *)    | ConstStringJumdo of reg * string
         (* 1c *)    | ConstClass of reg * Type
 
         (* 1d *)    | MonitorEnter of reg

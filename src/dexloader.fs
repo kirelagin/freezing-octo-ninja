@@ -293,14 +293,14 @@ module DexLoader =
                 | 0x06uy -> Store.storeLong <| stream.GetInt64Var (int value_arg + 1)
                 | 0x10uy -> Store.storeFloat <| stream.GetFloatVar (int value_arg + 1)
                 | 0x11uy -> Store.storeDouble <| stream.GetDoubleVar (int value_arg + 1)
-                | 0x17uy -> JsRef << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x18uy -> JsRef << As<obj> <| dexf.Types.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x19uy -> JsRef << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x1Auy -> JsRef << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x1Buy -> JsRef << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x1Cuy -> JsRef << As<obj> <| DexFile.Read_encoded_array stream dexf
+                | 0x17uy -> RegAny << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x18uy -> RegAny << As<obj> <| dexf.Types.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x19uy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x1Auy -> RegAny << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x1Buy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x1Cuy -> RegAny << As<obj> <| DexFile.Read_encoded_array stream dexf
                 | 0x1Duy -> failwith "Annotations are not supported" //TODO #5
-                | 0x1Euy -> JsRef null
+                | 0x1Euy -> JavaScript.Undefined
                 | 0x1Fuy -> Store.storeInt << int32 <| value_arg
                 | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()
 
@@ -341,7 +341,7 @@ module DexLoader =
                     | 0x18uy -> ConstWide << OpFormat.read51l
                     | 0x19uy -> ConstWideHigh16 << OpFormat.read21h
                     | 0x1Auy -> ConstString << Arrows.secondOf2 (Array.get dexf.Strings << int) << OpFormat.read21c
-                    | 0x1Buy -> ConstStringJumdo << Arrows.secondOf2 (Array.get dexf.Strings << int) << OpFormat.read31c
+                    | 0x1Buy -> ConstString << Arrows.secondOf2 (Array.get dexf.Strings << int) << OpFormat.read31c
                     | 0x1Cuy -> ConstClass << Arrows.secondOf2 (Array.get dexf.Types << int) << OpFormat.read21c
 
                     | 0x1Duy -> MonitorEnter << OpFormat.read11x
