@@ -163,7 +163,10 @@ module ThreadWorker =
                 | AddInt (d, a, b) ->
                     this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + Store.loadInt (this.GetReg b))); next ()
 
+    [<JavaScript>]
     let mutable thread = None
+
+    [<JavaScript>]
     let init (meth : Dex.Method,  args : RegValue array) =
         let t = new Thread ()
         thread <- Some t
