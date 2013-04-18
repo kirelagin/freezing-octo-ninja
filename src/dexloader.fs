@@ -69,8 +69,8 @@ module DexLoader =
         let read35c (stream : FileArray.DexFileArray) : unibble * uint16 * reg * reg * reg * reg * reg =
             let ag = stream.GetByte ()
             let meth = stream.GetUInt16 ()
-            let fe = stream.GetByte ()
             let dc = stream.GetByte ()
+            let fe = stream.GetByte ()
             (unibble <| (ag >>> 4), meth, reg <| unibble dc, reg << unibble <| (dc >>> 4), reg <| unibble fe, reg << unibble <| (fe >>> 4), reg <| unibble ag)
 
         let read3rc (stream : FileArray.DexFileArray) : uint8 * uint16 * reg =
