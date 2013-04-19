@@ -168,7 +168,7 @@ module ThreadWorker =
                         getVirtualMethod (o, meth) (fun m -> thread.ExecuteMethod m args next)
                     | InvokeDirect ->
                         let (Method (dtype, _, _)) = meth
-                        getMethodImpl meth false (fun m -> thread.ExecuteMethod (dtype, m) args next)
+                        getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, m) args next)
                     // TODO: static and super
 
                 // ops missing…
