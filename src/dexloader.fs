@@ -356,7 +356,7 @@ module DexLoader =
                     | 0x25uy -> FilledNewArrayRange << Arrows.secondOf3 (Array.get dexf.Types << int) << OpFormat.read3rc
                     | 0x26uy -> fun (stream : FileArray.DexFileArray) ->
                                     let (r, b) = OpFormat.read31t stream
-                                    let oldoff = stream.Seek <| stream.Offset + uint32 b
+                                    let oldoff = stream.Seek <| stream.Offset + 2u * uint32 b
                                     if stream.GetUInt16 () <> 0x0300us then failwith "Wrong ident for fill-array-data-payload" else
                                     let element_width = int <| stream.GetUInt16 ()
                                     let size = int <| stream.GetUInt32 ()
@@ -375,7 +375,7 @@ module DexLoader =
                     | 0x2Auy -> Goto << RelativeBytes << int32 << OpFormat.read30t
                     | 0x2Buy -> fun (stream : FileArray.DexFileArray) ->
                                     let (r, b) = OpFormat.read31t stream
-                                    let oldoff = stream.Seek <| stream.Offset + uint32 b
+                                    let oldoff = stream.Seek <| stream.Offset + 2u * uint32 b
                                     if stream.GetUInt16 () <> 0x0100us then failwith "Wrong ident for packed-switch-payload" else
                                     let size = int <| stream.GetUInt16 ()
                                     let first_key = stream.GetInt32 ()
@@ -384,7 +384,7 @@ module DexLoader =
                                     Switch (reg r, pairs)
                     | 0x2Cuy -> fun (stream : FileArray.DexFileArray) ->
                                     let (r, b) = OpFormat.read31t stream
-                                    let oldoff = stream.Seek <| stream.Offset + uint32 b
+                                    let oldoff = stream.Seek <| stream.Offset + 2u * uint32 b
                                     if stream.GetUInt16 () <> 0x0200us then failwith "Wrong ident for sparse-switch-payload" else
                                     let size = int <| stream.GetUInt16 ()
                                     let keys = Array.init size (fun _ -> stream.GetInt32 ())
