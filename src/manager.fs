@@ -15,7 +15,8 @@ module Manager =
 
     [<JavaScript>]
     let registerClass (cls : Dex.Class) =
-        library.Add(cls.dclass, cls)
+        let (Class (dtype, _, _, _, _)) = cls
+        library.Add(dtype, cls)
 
     [<JavaScript>]
     let loadDex (bytes : ArrayBuffer) =
@@ -48,16 +49,19 @@ module Manager =
         | None -> failwith "Type without associated class!"
 
     [<JavaScript>]
-    let resolveMethod (cls : Dex.Class) (name : string) (proto : Dex.Proto) =
-        let c = ref cls
-        let m = ref None
-        while (!m).IsNone do
-            m := Array.tryFind (fun (m : Dex.Method) -> m.name = name && m.proto = proto) ((!c).virtual_methods)
-            if (!m).IsNone then
-                c := match (!c).super with
-                     | Some t -> classOfType t
-                     | None -> failwith "Method not found" //TODO #10 throw IncompatibleClassChangeError
-        (!m).Value
+    let rec resolveMethod (cls : Dex.Class) (meth : Dex.Method) =
+        let (Class (dtype, _, super, _, impl)) = cls
+        match impl with
+        | None -> failwith "Class without class_data"
+        | Some (ClassImpl (_, _, direct, virt)) ->
+            let m = Dictionary.tryGet virt meth
+            match m with
+            | Some (_, Some method_impl) -> (dtype, method_impl)
+            | Some (_, None) -> failwith "Method not implemented" //TODO #10 throw IncompatibleClassChangeError
+            | None ->
+                match super with
+                | None -> failwith "Method not found" //TODO #10 throw IncompatibleClassChangeError
+                | Some t -> resolveMethod (classOfType t) meth
 
     [<JavaScript>]
     let processRequest (r : ResourceRequest) : ResourceReply =
@@ -65,11 +69,11 @@ module Manager =
         | RequestClass (dtype) ->
             match Dictionary.tryGet library dtype with
             | Some c -> ProvideClass c
-            | None -> failwith <| "Unknown class: " + dtype.descriptor
-        | ResolveMethod (refr, name, proto) ->
+            | None -> let (Type descr) = dtype in failwith <| "Unknown class: " + descr
+        | ResolveMethod (refr, meth) ->
             match dereference refr with
             | VMObj (cls, r) ->
-                let resolved = resolveMethod cls name proto
+                let resolved = resolveMethod cls meth
                 ProvideMethod resolved
         | CreateInstance dtype ->
             ProvideInstance << createInstance << classOfType <| dtype
