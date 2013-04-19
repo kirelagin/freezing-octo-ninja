@@ -8,8 +8,8 @@ module DexLoader =
 
     [<JavaScript>]
     module OpFormat =
-        let read10x (stream : FileArray.DexFileArray) : unit =
-            stream.GetByte () |> ignore
+        let read10x (stream : FileArray.DexFileArray) : byte =
+            stream.GetByte ()
 
         let read12x (stream : FileArray.DexFileArray) : reg * reg =
             let ba = stream.GetByte ()
@@ -311,7 +311,20 @@ module DexLoader =
             let readInstruction () =
                 let op = stream.GetByte ()
                 (match op with
-                    | 0x00uy -> Nop << OpFormat.read10x
+                    | 0x00uy -> fun (stream : FileArray.DexFileArray) ->
+                                    let nature = OpFormat.read10x stream
+                                    let skip = match nature with
+                                               // nop
+                                               | 0x00uy -> 0
+                                               // packed-switch-payload
+                                               | 0x01uy -> int (stream.GetUInt16 ()) * 2  + 4
+                                               // sparse-swtich-payload
+                                               | 0x02uy -> int (stream.GetInt16 ()) * 4 + 2
+                                               // fill-array-data-payload
+                                               | 0x03uy -> (int (stream.GetUInt16 ()) * int (stream.GetUInt32 ()) + 1) / 2 + 4
+                                               | _ -> failwith "Unknown NOP-kind"
+                                    stream.GetBytes (skip * 2) |> ignore
+                                    Nop ()
                     | 0x01uy
                     | 0x07uy -> Move << OpFormat.read12x
                     | 0x02uy
@@ -327,7 +340,7 @@ module DexLoader =
                     | 0x0Buy -> MoveResultWide << OpFormat.read11x
                     | 0x0Duy -> MoveException << OpFormat.read11x
 
-                    | 0x0Euy -> ReturnVoid << OpFormat.read10x
+                    | 0x0Euy -> ReturnVoid << ignore << OpFormat.read10x
                     | 0x0Fuy
                     | 0x11uy -> Return << OpFormat.read11x
                     | 0x10uy -> ReturnWide << OpFormat.read11x
