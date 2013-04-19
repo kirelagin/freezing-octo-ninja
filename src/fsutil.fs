@@ -33,7 +33,8 @@ module FsUtil =
             [| |]
         let addNoRepeat (d : dumbdict<'k, 'v>) (k : 'k) (v : 'v) =
             Array.push d (k, v)
-        let tryGet (d : dumbdict<'k, 'v>) (k : 'k) =
-            match Array.tryFind (fun (k1, _) -> k = k1) d with
+        let tryGetWith (eq : 'k -> 'k -> bool) (d : dumbdict<'k, 'v>) (k : 'k) =
+            match Array.tryFind (fun (k1, _) -> eq k k1) d with
             | Some (_, v) -> Some v
             | None -> None
+        let tryGet (d : dumbdict<'k, 'v>) (k : 'k) = tryGetWith (=) d k
