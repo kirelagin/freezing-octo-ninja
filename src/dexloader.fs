@@ -354,15 +354,43 @@ module DexLoader =
                     | 0x23uy -> NewArray << Arrows.thirdOf3 (Array.get dexf.Types << int) << OpFormat.read22c
                     | 0x24uy -> FilledNewArray << Arrows.secondOf7 (Array.get dexf.Types << int) << OpFormat.read35c
                     | 0x25uy -> FilledNewArrayRange << Arrows.secondOf3 (Array.get dexf.Types << int) << OpFormat.read3rc
-                    (*| 0x26uy -> let (r, b) = OpFormat.read31t
-                                FillArrayData (reg r, ...read payload... *) //TODO #9
+                    | 0x26uy -> fun (stream : FileArray.DexFileArray) ->
+                                    let (r, b) = OpFormat.read31t stream
+                                    let oldoff = stream.Seek <| uint32 b
+                                    if stream.GetUInt16 () <> 0x0300us then failwith "Wrong ident for fill-array-data-payload" else
+                                    let element_width = int <| stream.GetUInt16 ()
+                                    let size = int <| stream.GetUInt32 ()
+                                    let data = if element_width <= 4 then
+                                                    Array.init size (fun _ -> Dex.Store.storeInt <| stream.GetInt32Var element_width)
+                                                elif element_width = 8 then
+                                                    Array.init size (fun _ -> Dex.Store.storeLong <| stream.GetInt64 ())
+                                                else
+                                                    failwith "Bad element width in fill-array-data-payload"
+                                    stream.Seek oldoff |> ignore
+                                    FillArrayData (reg r, data)
 
                     | 0x27uy -> Throw << OpFormat.read11x
                     | 0x28uy -> Goto << RelativeBytes << int32 << OpFormat.read10t
                     | 0x29uy -> Goto << RelativeBytes << int32 << OpFormat.read20t
                     | 0x2Auy -> Goto << RelativeBytes << int32 << OpFormat.read30t
-                    (*| 0x2Buy -> *) //TODO #9 (packed-switch)
-                    (*| 0x2Cuy -> *) //TODO #9 (sparse switch)
+                    | 0x2Buy -> fun (stream : FileArray.DexFileArray) ->
+                                    let (r, b) = OpFormat.read31t stream
+                                    let oldoff = stream.Seek <| uint32 b
+                                    if stream.GetUInt16 () <> 0x0100us then failwith "Wrong ident for packed-switch-payload" else
+                                    let size = int <| stream.GetUInt16 ()
+                                    let first_key = stream.GetInt32 ()
+                                    let pairs = Array.init size (fun i -> (first_key + i, RelativeBytes <| stream.GetInt32 ()))
+                                    stream.Seek oldoff |> ignore
+                                    Switch (reg r, pairs)
+                    | 0x2Cuy -> fun (stream : FileArray.DexFileArray) ->
+                                    let (r, b) = OpFormat.read31t stream
+                                    let oldoff = stream.Seek <| uint32 b
+                                    if stream.GetUInt16 () <> 0x0200us then failwith "Wrong ident for sparse-switch-payload" else
+                                    let size = int <| stream.GetUInt16 ()
+                                    let keys = Array.init size (fun _ -> stream.GetInt32 ())
+                                    let targets = Array.init size (fun _ -> RelativeBytes <| stream.GetInt32 ())
+                                    stream.Seek oldoff |> ignore
+                                    Switch (reg r, Array.zip keys targets)
 
                     | 0x2Duy -> curry CmpFloat LtBias << OpFormat.read23x
                     | 0x2Euy -> curry CmpFloat GtBias << OpFormat.read23x
@@ -552,17 +580,20 @@ module DexLoader =
                 ) stream
 
             let resolveOffset (cur, insn) = // TODO: more efficient lookup?
-                let resolved rel =
-                    match Array.tryFindIndex (fun (ofs, _) -> int32 ofs = int32 cur + rel) result with
-                        | Some i -> AbsoluteIndex i
-                        | None -> failwith "Could not resolve relative offset"
+                let resolved offs =
+                    match offs with
+                    | RelativeBytes rel ->
+                        match Array.tryFindIndex (fun (ofs, _) -> int32 ofs = int32 cur + rel) result with
+                            | Some i -> AbsoluteIndex i
+                            | None -> failwith "Could not resolve relative offset"
+                    | AbsoluteIndex _ -> offs
                     
                 match insn with
-                   (*| FillArrayData ... -> *) //TODO #9 [Why is it here? It should't contain an offset, the payload should already be read]
-                   | Goto (RelativeBytes off)               -> Goto (resolved off)
-                   | If (test, (a, b, RelativeBytes off))   -> If (test, (a, b, resolved off))
-                   | IfZ (test, (a, RelativeBytes off))     -> IfZ (test, (a, resolved off))
-                   | _                                      -> insn
+                   | Goto (off)               -> Goto (resolved off)
+                   | If (test, (a, b, off))   -> If (test, (a, b, resolved off))
+                   | IfZ (test, (a, off))     -> IfZ (test, (a, resolved off))
+                   | Switch (r, pairs)        -> Switch (r, Array.map (Arrows.secondOf2 resolved) pairs)
+                   | _                        -> insn
                 
 
             while !offset < size do

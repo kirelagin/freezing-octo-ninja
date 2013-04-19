@@ -206,12 +206,11 @@ module Dex =
         (* 23 *)    | NewArray of reg * reg * Type
         (* 24 *)    | FilledNewArray of (unibble * Type * reg * reg * reg * reg * reg )
         (* 25 *)    | FilledNewArrayRange of (uint8 * Type * reg)
-        (* 26 *)    (*| FillArrayData of reg * CodeOffset<int32> *) //TODO #9
+        (* 26 *)    | FillArrayData of reg * RegValue array
 
         (* 27 *)    | Throw of reg
         (* 28-2a *) | Goto of CodeOffset
-        (* 2b *)    (*| PackedSwitch of *) //TODO #9
-        (* 2c *)    (*| SparseSwitch of *) //TODO #9
+        (* 2b-2c *) | Switch of reg * (int * CodeOffset) array
 
         (* 2d-2e *) | CmpFloat of Bias * (reg * reg * reg)
         (* 2f-30 *) | CmpDouble of Bias * (reg * reg * reg)
