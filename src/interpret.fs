@@ -72,7 +72,7 @@ module ThreadWorker =
                                     ret <- None
                                     r
                                  | None -> failwith "Can't 'move-result', no result"
-        member this.Start (dtype : Dex.Type, meth : Dex.MethodImpl, args : RegValue array) = this.ExecuteMethod (dtype, meth) args this.Finish
+        member this.Start (dtype : Dex.Type, meth : Dex.MethodImpl) (args : RegValue array) = this.ExecuteMethod (dtype, meth) args this.Finish
         member this.Finish () = ()
     and 
      [<JavaScript>]
@@ -180,7 +180,7 @@ module ThreadWorker =
     let mutable thread = None
 
     [<JavaScript>]
-    let init (dtype : Dex.Type, meth : Dex.MethodImpl,  args : RegValue array) =
+    let init ((dtype : Dex.Type, meth : Dex.MethodImpl),  args : RegValue array) =
         let t = new Thread ()
         thread <- Some t
-        t.Start (dtype, meth, args)
+        t.Start (dtype, meth) args
