@@ -317,11 +317,11 @@ module DexLoader =
                                                // nop
                                                | 0x00uy -> 0
                                                // packed-switch-payload
-                                               | 0x01uy -> int (stream.GetUInt16 ()) * 2  + 4
+                                               | 0x01uy -> int (stream.GetUInt16 ()) * 2  + 2
                                                // sparse-swtich-payload
-                                               | 0x02uy -> int (stream.GetInt16 ()) * 4 + 2
+                                               | 0x02uy -> int (stream.GetInt16 ()) * 4
                                                // fill-array-data-payload
-                                               | 0x03uy -> (int (stream.GetUInt16 ()) * int (stream.GetUInt32 ()) + 1) / 2 + 4
+                                               | 0x03uy -> (int (stream.GetUInt16 ()) * int (stream.GetUInt32 ()) + 1) / 2
                                                | _ -> failwith "Unknown NOP-kind"
                                     stream.GetBytes (skip * 2) |> ignore
                                     Nop ()
