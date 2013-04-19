@@ -1,6 +1,7 @@
 namespace Dalvik
 
 module Dex =
+    open System.Collections.Generic
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
 
@@ -84,89 +85,33 @@ module Dex =
 
     type
      [<JavaScript>]
-     Type =
-        //val mutable desriptor : string
-        [<DefaultValue>] val mutable descriptor : string
-        //new (descriptor0) = { desriptor = descriptor0 }
-        new () = {} //TODO #14
-        static member Mew (descriptor0) =
-            let t = Type()
-            t.descriptor <- descriptor0
-            t
+     Type = Type of string
     and
      [<JavaScript>]
-     Proto =
-        //val mutable shorty : string
-        //val mutable return_type : Type
-        //val mutable parameters : Type array
-        [<DefaultValue>] val mutable shorty : string
-        [<DefaultValue>] val mutable return_type : Type
-        [<DefaultValue>] val mutable parameters : Type array
-        //new (shorty0, return_type0, parameters0) = { shorty = shorty0; return_type = return_type0; parameters = parameters0 }
-        new () = {} //TODO #14
-        static member Mew (shorty0, return_type0, parameters0) =
-            let p = Proto()
-            p.shorty <- shorty0
-            p.return_type <- return_type0
-            p.parameters <- parameters0
-            p
+     Proto = Proto of string * Type * Type array
     and
      [<JavaScript>]
-     Field =
-        //val mutable dtype : Type
-        //val mutable name : string
-        [<DefaultValue>] val mutable dtype : Type
-        [<DefaultValue>] val mutable name : string
-        [<DefaultValue>] val mutable access_flags : uint32
-        //new (dclass0, dtype0, name0) = { dtype = dtype0; name = name0 }
-        new () = {} //TODO #14
-        static member Mew (dclass0, dtype0, name0) =
-            let f = Field()
-            f.dtype <- dtype0
-            f.name <- name0
-            f
+     Field = Field of Type * Type * string
     and
      [<JavaScript>]
-     Method =
-        //val mutable proto : Proto
-        //val mutable name : string
-        [<DefaultValue>] val mutable dclass : Type
-        [<DefaultValue>] val mutable proto : Proto
-        [<DefaultValue>] val mutable name : string
-        [<DefaultValue>] val mutable access_flags : uint32
-        [<DefaultValue>] val mutable registers_size : uint16
-        [<DefaultValue>] val mutable ins_size : uint16
-        [<DefaultValue>] val mutable outs_size : uint16
-        [<DefaultValue>] val mutable insns : Instruction array
-        //new (dclass0, proto0, name0) = { proto = proto0; name = name0 }
-        new () = {} //TODO #14
-        static member Mew (dclass0, proto0, name0) =
-            let m = Method()
-            m.dclass <- dclass0
-            m.proto <- proto0
-            m.name <- name0
-            m
+     Method = Method of Type * Proto * string
     and
      [<JavaScript>]
-     Class  =
-        [<DefaultValue>] val mutable dclass : Type
-        //TODO #6 (access_flags)
-        [<DefaultValue>] val mutable super : Type option
-        [<DefaultValue>] val mutable interfaces : Type array
-        [<DefaultValue>] val mutable direct_methods : Method array
-        [<DefaultValue>] val mutable virtual_methods : Method array
-        //TODO #5 (annotations)
-        //TODO #2 (static_values)
-        //new (...)
-        new () = {} //TODO #14
-        static member New (dclass0, access_flags0, superclass0, interfaces0, source_file0, static_fields0, instance_fields0, direct_methods0, virtual_methods0, static_values0) =
-            let c = Class()
-            c.dclass <- dclass0
-            c.super <- superclass0
-            c.interfaces <- interfaces0
-            c.direct_methods <- direct_methods0
-            c.virtual_methods <- virtual_methods0
-            c
+     MethodImpl = MethodImpl of (* registers_size *) uint16
+                              * (* ins_size *) uint16
+                              * (* outs_size *) uint16
+                              * (* insns *) Instruction array
+    and
+     [<JavaScript>]
+     Class = Class of Type * uint32 * Type option * Type array * ClassImpl option
+     //TODO #5 (annotations)
+     //TODO #2 (static_values)
+    and
+     [<JavaScript>]
+     ClassImpl = ClassImpl of Dictionary<Field, uint32> * Dictionary<Field, uint32>
+                              (* static *)                (* instane *)
+                            * Dictionary<Method, uint32 * MethodImpl option> * Dictionary<Method, uint32 * MethodImpl option>
+                              (* direct *)                                     (* virtual *)
     and
      [<JavaScript>]
      Instruction =
