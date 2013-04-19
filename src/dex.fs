@@ -1,7 +1,7 @@
 namespace Dalvik
 
 module Dex =
-    open System.Collections.Generic
+    open Dumbdict
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
 
@@ -108,9 +108,9 @@ module Dex =
      //TODO #2 (static_values)
     and
      [<JavaScript>]
-     ClassImpl = ClassImpl of Dictionary<Field, uint32> * Dictionary<Field, uint32>
+     ClassImpl = ClassImpl of dumbdict<Field, uint32> * dumbdict<Field, uint32>
                               (* static *)                (* instane *)
-                            * Dictionary<Method, uint32 * MethodImpl option> * Dictionary<Method, uint32 * MethodImpl option>
+                            * dumbdict<Method, uint32 * MethodImpl option> * dumbdict<Method, uint32 * MethodImpl option>
                               (* direct *)                                     (* virtual *)
     and
      [<JavaScript>]

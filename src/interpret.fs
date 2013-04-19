@@ -34,7 +34,7 @@ module ThreadWorker =
                             | None -> failwith "Class without class data"
                             | Some (ClassImpl (_, _, dir, virt)) ->
                                 let d = if direct then dir else virt
-                                match Dictionary.tryGet d meth with
+                                match Dumbdict.tryGet d meth with
                                 | None -> failwith "Method not found"
                                 | Some (_, None) -> failwith "Method not implemented"
                                 | Some (_, Some impl) -> cont impl

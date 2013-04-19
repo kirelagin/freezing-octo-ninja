@@ -1,7 +1,7 @@
 namespace Dalvik
 
 module DexLoader =
-    open System.Collections.Generic
+    open Dumbdict
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
 
@@ -202,25 +202,25 @@ module DexLoader =
                     else
                         stream.Seek class_data_off |> ignore
 
-                        let static_fields : Dictionary<Field, uint32> = Dictionary ()
-                        let instance_fields : Dictionary<Field, uint32> = Dictionary ()
-                        let direct_methods : Dictionary<Method, uint32 * MethodImpl option> = Dictionary ()
-                        let virtual_methods : Dictionary<Method, uint32 * MethodImpl option> = Dictionary ()
+                        let static_fields : dumbdict<Field, uint32> = empty ()
+                        let instance_fields : dumbdict<Field, uint32> = empty ()
+                        let direct_methods : dumbdict<Method, uint32 * MethodImpl option> = empty ()
+                        let virtual_methods : dumbdict<Method, uint32 * MethodImpl option> = empty ()
 
                         let static_fields_size = stream.GetULeb128 ()
                         let instance_fields_size = stream.GetULeb128 ()
                         let direct_methods_size = stream.GetULeb128 ()
                         let virtual_methods_size = stream.GetULeb128 ()
 
-                        let encoded_fields (count : uint32) (d : Dictionary<Field, uint32>) =
+                        let encoded_fields (count : uint32) (d : dumbdict<Field, uint32>) =
                             let mutable field_idx = 0u
                             for i in {1..(int32 count)} do
                                 let field_idx_diff = stream.GetULeb128 ()
                                 let access_flags = stream.GetULeb128 ()
                                 field_idx <- field_idx + field_idx_diff
-                                d.Add (dexf.Fields.[int field_idx], access_flags)
+                                Dumbdict.addNoRepeat d (dexf.Fields.[int field_idx]) access_flags
 
-                        let encoded_methods (count : uint32) (d : Dictionary<Method, uint32 * MethodImpl option>) =
+                        let encoded_methods (count : uint32) (d : dumbdict<Method, uint32 * MethodImpl option>) =
                             let mutable method_idx = 0u
                             for i in {1..(int32 count)} do
                                 let method_idx_diff = stream.GetULeb128 ()
@@ -245,7 +245,7 @@ module DexLoader =
                                             //TODO #10 (read tries and handlers)
                                             stream.Seek old_off |> ignore
                                             MethodImpl (registers_size, ins_size, outs_size, insns)
-                                d.Add (dexf.Methods.[int method_idx], (access_flags, impl))
+                                Dumbdict.addNoRepeat d (dexf.Methods.[int method_idx]) (access_flags, impl)
 
                         encoded_fields static_fields_size static_fields
                         encoded_fields instance_fields_size instance_fields

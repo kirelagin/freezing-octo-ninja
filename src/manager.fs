@@ -54,7 +54,7 @@ module Manager =
         match impl with
         | None -> failwith "Class without class_data"
         | Some (ClassImpl (_, _, direct, virt)) ->
-            let m = Dictionary.tryGet virt meth
+            let m = Dumbdict.tryGet virt meth
             match m with
             | Some (_, Some method_impl) -> (dtype, method_impl)
             | Some (_, None) -> failwith "Method not implemented" //TODO #10 throw IncompatibleClassChangeError

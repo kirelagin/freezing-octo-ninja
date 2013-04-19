@@ -24,3 +24,16 @@ module FsUtil =
     module Dictionary =
         let tryGet (d : System.Collections.Generic.Dictionary<'k, 'v>) (k : 'k) =
             if d.ContainsKey k then Some <| d.[k] else None
+
+    [<JavaScript>]
+    module Dumbdict =
+        type dumbdict<'k, 'v> = ('k * 'v) array
+
+        let empty () : dumbdict<'k, 'v> =
+            [| |]
+        let addNoRepeat (d : dumbdict<'k, 'v>) (k : 'k) (v : 'v) =
+            Array.push d (k, v)
+        let tryGet (d : dumbdict<'k, 'v>) (k : 'k) =
+            match Array.tryFind (fun (k1, _) -> k = k1) d with
+            | Some (_, v) -> Some v
+            | None -> None
