@@ -49,6 +49,34 @@ module ThreadWorker =
                 | _ -> failwith <| "Unexpected reply. I need an Instance but got a " + r.ToString ())
 
     [<JavaScript>]
+    let staticGet (field : Dex.Field) (cont : RegValue -> unit) =
+        requestResource (GetStaticField field, fun r ->
+            match r with
+            | ProvideValue v -> cont v
+            | _ -> failwith <| "Unexpected reply. I need a value but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let staticPut (field : Dex.Field) (v : RegValue) (cont : unit -> unit) =
+        requestResource (PutStaticField (field, v), fun r ->
+            match r with
+            | RequestProcessed -> cont ()
+            | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let instanceGet (refr : dref) (field : Dex.Field) (cont : RegValue -> unit) =
+        requestResource (GetInstanceField (refr, field), fun r ->
+            match r with
+            | ProvideValue v -> cont v
+            | _ -> failwith <| "Unexpected reply. I need a value but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let instancePut (refr : dref) (field : Dex.Field) (v : RegValue) (cont : unit -> unit) =
+        requestResource (PutInstanceField (refr, field, v), fun r ->
+            match r with
+            | RequestProcessed -> cont ()
+            | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
+
+    [<JavaScript>]
     type Thread () =
         let frames : ThreadFrame array = [| |]
         let mutable ret : RegValue option = None
@@ -168,8 +196,27 @@ module ThreadWorker =
 
                 // ops missing…
 
+                | Iget (d, r, f) ->
+                    match this.GetReg r with
+                    | RegRef refr -> instanceGet refr f (fun v -> this.SetReg (d, v); next ())
+                    | _ -> failwith "iget on non-object"
+                | Iput (s, r, f) ->
+                    match this.GetReg r with
+                    | RegRef refr -> instancePut refr f (this.GetReg s) next
+                    | _ -> failwith "iput on non-object"
+
+                | Sget (d, f) -> staticGet f (fun v -> this.SetReg(d, v); next ())
+                | Sput (s, f) -> staticPut f (this.GetReg s) next
+
                 | AddInt (d, a, b) ->
                     this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + Store.loadInt (this.GetReg b))); next ()
+
+                // ops missing…
+
+                | AddIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + i)); next ()
+
+                // ops missing…
 
     [<JavaScript>]
     let mutable thread = None

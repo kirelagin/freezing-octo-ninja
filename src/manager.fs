@@ -26,7 +26,7 @@ module Manager =
     let init = loadDex
 
     [<JavaScript>]
-    type VMObject = VMObj of Dex.Class * Dictionary<uint16, RegValue>
+    type VMObject = VMObj of Dex.Class * Dictionary<Dex.Field, RegValue>
 
     [<JavaScript>]
     let heap : VMObject array = [| |]
@@ -52,13 +52,17 @@ module Manager =
     let initialisedClasses : Dictionary<Dex.Type, Dictionary<Dex.Field, RegValue>> = Dictionary ()
 
     [<JavaScript>]
-    let ensureClassInitialised (Class (dtype, _, _, _, inst) as cls) (cont : unit -> unit)=
-        if initialisedClasses.ContainsKey dtype then cont () else
-        initialisedClasses.Add(dtype, Dictionary ())
-        let clinit = Dex.Method (dtype, Proto ("()V", Type "V", [| |]), "<clinit")
-        match Runtime.getMethodImpl cls true clinit with
-        | None -> cont ()
-        | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (dtype, impl) [| |] cont
+    let ensureClassInitialised (dtype : Dex.Type) (cont : Dictionary<Dex.Field, RegValue> -> unit) =
+        match Dictionary.tryGet initialisedClasses dtype with
+        | Some d -> cont d
+        | None ->
+            let d = Dictionary ()
+            initialisedClasses.Add(dtype, d)
+            let cls = classOfType dtype
+            let clinit = Dex.Method (dtype, Proto ("()V", Type "V", [| |]), "<clinit")
+            match Runtime.getMethodImpl cls true clinit with
+            | None -> cont <| d
+            | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (dtype, impl) [| |] (fun () -> cont d) 
 
     [<JavaScript>]
     let rec resolveMethod (cls : Dex.Class) (meth : Dex.Method)  =
@@ -81,7 +85,7 @@ module Manager =
         | RequestClass (dtype) ->
             match Dictionary.tryGet library dtype with
             | Some c ->
-                ensureClassInitialised c (fun _ -> cont <| ProvideClass c)
+                ensureClassInitialised dtype (fun _ -> cont <| ProvideClass c)
             | None -> let (Type descr) = dtype in failwith <| "Unknown class: " + descr
         | ResolveMethod (refr, meth) ->
             match dereference refr with
@@ -90,3 +94,19 @@ module Manager =
                 cont <| ProvideMethod resolved
         | CreateInstance dtype ->
             cont << ProvideInstance << createInstance << classOfType <| dtype
+        | GetInstanceField (refr, f) ->
+            let (VMObj (_, d)) = heap.[refr]
+            cont << ProvideValue <| d.[f]
+        | PutInstanceField (refr, f, v) ->
+            let (VMObj (_, d)) = heap.[refr]
+            d.Add (f, v)
+            cont RequestProcessed
+        | GetStaticField f ->
+            let (Field (dtype, _, _)) = f
+            ensureClassInitialised dtype (fun d ->
+                                            cont << ProvideValue <| d.[f])
+        | PutStaticField (f, v) ->
+            let (Field (dtype, _, _)) = f
+            ensureClassInitialised dtype (fun d ->
+                                            d.Add (f, v)
+                                            cont RequestProcessed)
