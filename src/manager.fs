@@ -59,7 +59,7 @@ module Manager =
             let d = Dictionary ()
             initialisedClasses.Add(dtype, d)
             let cls = classOfType dtype
-            let clinit = Dex.Method (dtype, Proto ("()V", Type "V", [| |]), "<clinit")
+            let clinit = Dex.Method (dtype, Proto ("V", Type "V", [| |]), "<clinit>")
             match Runtime.getMethodImpl cls true clinit with
             | None -> cont <| d
             | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (dtype, impl) [| |] (fun () -> cont d) 
