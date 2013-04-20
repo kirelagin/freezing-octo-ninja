@@ -29,15 +29,10 @@ module ThreadWorker =
     [<JavaScript>]
     let getMethodImpl (meth : Dex.Method) (direct : bool) (cont : Dex.MethodImpl -> unit) =
         let (Method (dtype, _, _)) = meth
-        getClass dtype <| fun (Class (_, _, _, _, impl)) ->
-                            match impl with
-                            | None -> failwith "Class without class data"
-                            | Some (ClassImpl (_, _, dir, virt)) ->
-                                let d = if direct then dir else virt
-                                match Dumbdict.tryGet d meth with
-                                | None -> failwith "Method not found"
-                                | Some (_, None) -> failwith "Method not implemented"
-                                | Some (_, Some impl) -> cont impl
+        getClass dtype <| fun c ->
+                            match Runtime.getMethodImpl c direct meth with
+                            | None -> failwith "Method not found"
+                            | Some impl -> cont impl
 
     [<JavaScript>]
     let getVirtualMethod (refr : dref, meth : Dex.Method) (cont : Dex.Type * Dex.MethodImpl -> unit) =
