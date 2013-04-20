@@ -16,7 +16,7 @@ module Manager =
     [<JavaScript>]
     let registerClass (cls : Dex.Class) =
         let (Class (dtype, _, _, _, _)) = cls
-        library.Add(dtype, cls)
+        library.[dtype] <- cls
 
     [<JavaScript>]
     let loadDex (bytes : ArrayBuffer) =
@@ -99,7 +99,7 @@ module Manager =
             cont << ProvideValue <| d.[f]
         | PutInstanceField (refr, f, v) ->
             let (VMObj (_, d)) = heap.[refr]
-            d.Add (f, v)
+            d.[f] <- v
             cont RequestProcessed
         | GetStaticField f ->
             let (Field (dtype, _, _)) = f
@@ -108,5 +108,5 @@ module Manager =
         | PutStaticField (f, v) ->
             let (Field (dtype, _, _)) = f
             ensureClassInitialised dtype (fun d ->
-                                            d.Add (f, v)
+                                            d.[f] <- v
                                             cont RequestProcessed)
