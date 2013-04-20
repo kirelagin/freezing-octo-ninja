@@ -333,20 +333,20 @@ module DexLoader =
                     | 0x02uy
                     | 0x08uy -> Move << OpFormat.read22x
                     | 0x03uy
+                    | 0x04uy -> Move << OpFormat.read12x
+                    | 0x05uy -> Move << OpFormat.read22x
+                    | 0x06uy -> Move << OpFormat.read32x
                     | 0x09uy -> Move << OpFormat.read32x
-                    | 0x04uy -> MoveWide << OpFormat.read12x
-                    | 0x05uy -> MoveWide << OpFormat.read22x
-                    | 0x06uy -> MoveWide << OpFormat.read32x
 
                     | 0x0Auy
+                    | 0x0Buy
                     | 0x0Cuy -> MoveResult << OpFormat.read11x
-                    | 0x0Buy -> MoveResultWide << OpFormat.read11x
                     | 0x0Duy -> MoveException << OpFormat.read11x
 
                     | 0x0Euy -> ReturnVoid << ignore << OpFormat.read10x
                     | 0x0Fuy
+                    | 0x10uy
                     | 0x11uy -> Return << OpFormat.read11x
-                    | 0x10uy -> ReturnWide << OpFormat.read11x
 
                     | 0x12uy -> Const4 << OpFormat.read11n
                     | 0x13uy -> Const16 << OpFormat.read21s
@@ -428,49 +428,49 @@ module DexLoader =
                     | 0x3Duy -> curry IfZ Le << Arrows.secondOf2 (RelativeBytes << int32) << OpFormat.read21t
 
                     | 0x44uy
+                    | 0x45uy
                     | 0x46uy
                     | 0x47uy
                     | 0x48uy
                     | 0x49uy
                     | 0x4Auy -> Aget << OpFormat.read23x
-                    | 0x45uy -> AgetWide << OpFormat.read23x
                     | 0x4Buy
+                    | 0x4Cuy
                     | 0x4Duy
                     | 0x4Euy
                     | 0x4Fuy
                     | 0x50uy
                     | 0x51uy -> Aput << OpFormat.read23x
-                    | 0x4Cuy -> AputWide << OpFormat.read23x
 
                     | 0x52uy
+                    | 0x53uy
                     | 0x54uy
                     | 0x55uy
                     | 0x56uy
                     | 0x57uy
                     | 0x58uy -> Iget << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
-                    | 0x53uy -> IgetWide << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
                     | 0x59uy
+                    | 0x5Auy
                     | 0x5Buy
                     | 0x5Cuy
                     | 0x5Duy
                     | 0x5Euy
                     | 0x5Fuy -> Iput << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
-                    | 0x5Auy -> IputWide << Arrows.thirdOf3 (Array.get dexf.Fields << int) << OpFormat.read22c
 
                     | 0x60uy
+                    | 0x61uy
                     | 0x62uy
                     | 0x63uy
                     | 0x64uy
                     | 0x65uy
                     | 0x66uy -> Sget << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
-                    | 0x61uy -> SgetWide << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
                     | 0x67uy
+                    | 0x68uy
                     | 0x69uy
                     | 0x6Auy
                     | 0x6Buy
                     | 0x6Cuy
                     | 0x6Duy -> Sput << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
-                    | 0x68uy -> SputWide << Arrows.secondOf2 (Array.get dexf.Fields << int) << OpFormat.read21c
 
                     | 0x6Euy -> curry Invoke InvokeVirtual << Arrows.secondOf7 (Array.get dexf.Methods << int) << OpFormat.read35c
                     | 0x6Fuy -> curry Invoke InvokeSuper << Arrows.secondOf7 (Array.get dexf.Methods << int) << OpFormat.read35c

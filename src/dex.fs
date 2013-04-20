@@ -117,18 +117,12 @@ module Dex =
      Instruction =
         (* 00 *)    | Nop of unit
 
-        (* 01-03,
-           07-09 *) | Move of reg * reg
-        (* 04-06 *) | MoveWide of reg * reg
-
-        (* 0a,0c *) | MoveResult of reg
-        (* 0b *)    | MoveResultWide of reg
-
+        (* 01-09 *) | Move of reg * reg
+        (* 0a-0c *) | MoveResult of reg
         (* 0d *)    | MoveException of reg
 
         (* 0e *)    | ReturnVoid of unit
-        (* 0f,11 *) | Return of reg
-        (* 10 *)    | ReturnWide of reg
+        (* 0f-11 *) | Return of reg
 
         (* 12 *)    | Const4 of reg * nibble
         (* 13 *)    | Const16 of reg * int16
@@ -164,26 +158,14 @@ module Dex =
         (* 32-37 *) | If of Test * (reg * reg * CodeOffset)
         (* 38-3d *) | IfZ of Test * (reg * CodeOffset)
 
-        (* 44,
-           46-4a *) | Aget of reg * reg * reg
-        (* 45 *)    | AgetWide of reg * reg * reg
-        (* 4b,
-           4d-51 *) | Aput of reg * reg * reg
-        (* 4c *)    | AputWide of reg * reg * reg
+        (* 44-4a *) | Aget of reg * reg * reg
+        (* 4b-51 *) | Aput of reg * reg * reg
 
-        (* 52,
-           54-58 *) | Iget of reg * reg * Field
-        (* 53 *)    | IgetWide of reg * reg * Field
-        (* 59,
-           5b-5f *) | Iput of reg * reg * Field
-        (* 5a *)    | IputWide of reg * reg * Field
+        (* 52-58 *) | Iget of reg * reg * Field
+        (* 59-5f *) | Iput of reg * reg * Field
 
-        (* 60
-           62-66 *) | Sget of reg * Field
-        (* 61 *)    | SgetWide of reg * Field
-        (* 67,
-           69-6d *) | Sput of reg * Field
-        (* 68 *)    | SputWide of reg * Field
+        (* 60-66 *) | Sget of reg * Field
+        (* 67-6d *) | Sput of reg * Field
 
         (* 6e-72 *) | Invoke of InvokeKind * (unibble * Method * reg * reg * reg * reg * reg)
         (* 74-78 *) | InvokeRange of InvokeKind * (uint8 * Method * reg)
