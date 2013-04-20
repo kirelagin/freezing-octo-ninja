@@ -11,6 +11,14 @@
         <script src="./output.js" type="text/javascript"></script>
 
         <script type="text/javascript">
+        IntelliFactory.Runtime.Define(Dalvik, {
+            ThreadWorker: {
+                requestResource: function(r, cont) {
+                                    Dalvik.Manager.processRequest(r, cont);
+                                 }
+            }
+        });
+
         if (typeof IntelliFactory !== 'undefined')
             IntelliFactory.Runtime.Start();
         </script>
@@ -36,8 +44,9 @@
             function spawnThread() {
                 w = new Worker('thread.js');
                 w.onmessage = function(e) {
-                    var reply = Dalvik.Manager.processRequest(e.data);
-                    w.postMessage(reply);
+                    Dalvik.Manager.processRequest(e.data, function(reply) {
+                        w.postMessage(reply);
+                    });
                 }
                 return w;
             }

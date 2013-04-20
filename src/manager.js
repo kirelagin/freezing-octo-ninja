@@ -2,6 +2,16 @@ importScripts('./WebSharper/WebSharper.js', './WebSharper/IntelliFactory.WebShar
 importScripts('gLong.js');
 importScripts('output.js');
 
+
+IntelliFactory.Runtime.Define(Dalvik, {
+    ThreadWorker: {
+        requestResource: function(r, cont) {
+                            cont(Dalvik.Manager.processRequest(r));
+                         }
+    }
+});
+
+
 IntelliFactory.Runtime.Start();
 
 
@@ -10,8 +20,9 @@ self.onconnect = function(e) {
     port.onmessage = function(e) {
         Dalvik.Manager.init(e.data);
         port.onmessage = function(e) {
-            var reply = Dalvik.Manager.processRequest(e.data);
-            port.postMessage(reply);
+            Dalvik.Manager.processRequest(e.data, function(reply) {
+                port.postMessage(reply);
+            });
         }
     }
 }

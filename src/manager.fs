@@ -80,7 +80,7 @@ module Manager =
                 | Some t -> resolveMethod (classOfType t) meth
 
     [<JavaScript>]
-    let processRequest (r : ResourceRequest) (cont : ResourceReply -> unit) =
+    let processRequest (r : ResourceRequest, cont : ResourceReply -> unit) =
         match r with
         | RequestClass (dtype) ->
             match Dictionary.tryGet library dtype with
