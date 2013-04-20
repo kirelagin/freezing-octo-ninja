@@ -49,11 +49,23 @@ module Manager =
         | None -> failwith "Type without associated class!"
 
     [<JavaScript>]
-    let rec resolveMethod (cls : Dex.Class) (meth : Dex.Method) =
+    let initialisedClasses : Dictionary<Dex.Type, Dictionary<Dex.Field, RegValue>> = Dictionary ()
+
+    [<JavaScript>]
+    let ensureClassInitialised (Class (dtype, _, _, _, inst) as cls) (cont : unit -> unit)=
+        if initialisedClasses.ContainsKey dtype then cont () else
+        initialisedClasses.Add(dtype, Dictionary ())
+        let clinit = Dex.Method (dtype, Proto ("()V", Type "V", [| |]), "<clinit")
+        match Runtime.getMethodImpl cls true clinit with
+        | None -> cont ()
+        | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (dtype, impl) [| |] cont
+
+    [<JavaScript>]
+    let rec resolveMethod (cls : Dex.Class) (meth : Dex.Method)  =
         let (Class (dtype, _, super, _, impl)) = cls
         match impl with
         | None -> failwith "Class without class_data"
-        | Some (ClassImpl (_, _, direct, virt)) ->
+        | Some (ClassImpl (_, _, _, virt)) ->
             let m = Dumbdict.tryGetWith (fun (Method (_, p1, n1)) (Method (_, p2, n2)) -> n1 = n2 && p1 = p2) virt meth
             match m with
             | Some (_, Some method_impl) -> (dtype, method_impl)
@@ -64,16 +76,17 @@ module Manager =
                 | Some t -> resolveMethod (classOfType t) meth
 
     [<JavaScript>]
-    let processRequest (r : ResourceRequest) : ResourceReply =
+    let processRequest (r : ResourceRequest) (cont : ResourceReply -> unit) =
         match r with
         | RequestClass (dtype) ->
             match Dictionary.tryGet library dtype with
-            | Some c -> ProvideClass c
+            | Some c ->
+                ensureClassInitialised c (fun _ -> cont <| ProvideClass c)
             | None -> let (Type descr) = dtype in failwith <| "Unknown class: " + descr
         | ResolveMethod (refr, meth) ->
             match dereference refr with
             | VMObj (cls, r) ->
                 let resolved = resolveMethod cls meth
-                ProvideMethod resolved
+                cont <| ProvideMethod resolved
         | CreateInstance dtype ->
-            ProvideInstance << createInstance << classOfType <| dtype
+            cont << ProvideInstance << createInstance << classOfType <| dtype
