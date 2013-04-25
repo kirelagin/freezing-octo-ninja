@@ -10,6 +10,15 @@ module FsUtil =
     [<JavaScript>]
     let uncurry f (a,b) = f a b
 
+    [<AutoOpen>]
+    [<JavaScript>]
+    module String =
+        let (|StartsWith|_|) (p : string) (s : string) =
+            if s.StartsWith p then
+                Some <| s.Substring p.Length
+            else
+                None
+
     [<JavaScript>]
     module Arrows =
         let secondOf2 f (a, b) = (a, f b)

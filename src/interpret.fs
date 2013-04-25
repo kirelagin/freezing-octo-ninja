@@ -41,12 +41,42 @@ module ThreadWorker =
                 | ProvideMethod (t, m) -> cont (t, m)
                 | _ -> failwith <| "Unexpected reply. I need a Method but got a " + r.ToString ())
 
+
     [<JavaScript>]
     let createInstance (dtype : Dex.Type) (cont : dref -> unit) =
         requestResource (CreateInstance dtype, fun r ->
             match r with
                 | ProvideInstance r -> cont r
                 | _ -> failwith <| "Unexpected reply. I need an Instance but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let createArray (size : int32, dtype : Dex.Type) (cont : dref -> unit) =
+        requestResource (CreateArray (size, dtype), fun r ->
+            match r with
+            | ProvideInstance r -> cont r
+            | _ -> failwith <| "Unexpected reply. I need an Instance but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let fillArray (refr : dref, vals : RegValue array) (cont : unit -> unit) =
+        requestResource (FillArray (refr, vals), fun r ->
+            match r with
+            | RequestProcessed -> cont ()
+            | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
+
+
+    [<JavaScript>]
+    let arrayGet (refr : dref) (i : int32) (cont : RegValue -> unit) =
+        requestResource (GetArrayItem (refr, i), fun r ->
+            match r with
+            | ProvideValue v -> cont v
+            | _ -> failwith <| "Unexpected reply. I need a value but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let arrayPut (refr : dref) (i : int32) (v : RegValue) (cont : unit -> unit) =
+        requestResource (PutArrayItem (refr, i, v), fun r ->
+            match r with
+            | RequestProcessed -> cont ()
+            | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
 
     [<JavaScript>]
     let staticGet (field : Dex.Field) (cont : RegValue -> unit) =
@@ -141,6 +171,18 @@ module ThreadWorker =
                                                             this.SetReg (r, RegRef dref)
                                                             next ())
 
+                | NewArray (d, s, t) -> createArray (Store.loadInt << this.GetReg <| s, t) (fun dref ->
+                                                                                                this.SetReg (d, RegRef dref)
+                                                                                                next ())
+
+                | FilledNewArray _ -> failwith "Not implemented"
+                | FilledNewArrayRange _ -> failwith "Not implemented"
+
+                | FillArrayData (r, vals) ->
+                    match this.GetReg r with
+                    | RegRef refr -> fillArray (refr, vals) next
+                    | _ -> failwith "Bad destination register"
+
                 // ops missing…
 
                 | Goto offset -> match offset with
@@ -178,7 +220,26 @@ module ThreadWorker =
                                | Le -> va <= 0
                     if jump then goto i else next ()
 
-                // ops missing…
+                | Aget (d, r, i) ->
+                    match this.GetReg r with
+                    | RegRef refr -> arrayGet refr (Store.loadInt << this.GetReg <| i) (fun v -> this.SetReg (d, v); next ())
+                    | _ -> failwith "aget on non-object"
+                | Aput (s, r, i) ->
+                    match this.GetReg r with
+                    | RegRef refr -> arrayPut refr (Store.loadInt << this.GetReg <| i) (this.GetReg s) next
+                    | _ -> failwith "aput on non-object"
+
+                | Iget (d, r, f) ->
+                    match this.GetReg r with
+                    | RegRef refr -> instanceGet refr f (fun v -> this.SetReg (d, v); next ())
+                    | _ -> failwith "iget on non-object"
+                | Iput (s, r, f) ->
+                    match this.GetReg r with
+                    | RegRef refr -> instancePut refr f (this.GetReg s) next
+                    | _ -> failwith "iput on non-object"
+
+                | Sget (d, f) -> staticGet f (fun v -> this.SetReg(d, v); next ())
+                | Sput (s, f) -> staticPut f (this.GetReg s) next
 
                 | Invoke (kind, (count, meth, a1, a2, a3, a4, a5)) ->
                     let args = Array.map this.GetReg <| Array.sub [| a1; a2; a3; a4; a5 |] 0 (int count)
@@ -193,20 +254,6 @@ module ThreadWorker =
                         let (Method (dtype, _, _)) = meth
                         getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, m) args next)
                     // TODO: static and super
-
-                // ops missing…
-
-                | Iget (d, r, f) ->
-                    match this.GetReg r with
-                    | RegRef refr -> instanceGet refr f (fun v -> this.SetReg (d, v); next ())
-                    | _ -> failwith "iget on non-object"
-                | Iput (s, r, f) ->
-                    match this.GetReg r with
-                    | RegRef refr -> instancePut refr f (this.GetReg s) next
-                    | _ -> failwith "iput on non-object"
-
-                | Sget (d, f) -> staticGet f (fun v -> this.SetReg(d, v); next ())
-                | Sput (s, f) -> staticPut f (this.GetReg s) next
 
                 | AddInt (d, a, b) ->
                     this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + Store.loadInt (this.GetReg b))); next ()

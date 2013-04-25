@@ -8,6 +8,10 @@ module Shared =
         | RequestClass of Dex.Type
         | ResolveMethod of Dex.dref * Dex.Method
         | CreateInstance of Dex.Type
+        | CreateArray of int32 * Dex.Type
+        | FillArray of Dex.dref * Dex.RegValue array
+        | GetArrayItem of Dex.dref * int32
+        | PutArrayItem of Dex.dref * int32 * Dex.RegValue
         | GetStaticField of Dex.Field
         | PutStaticField of Dex.Field * Dex.RegValue
         | GetInstanceField of Dex.dref * Dex.Field

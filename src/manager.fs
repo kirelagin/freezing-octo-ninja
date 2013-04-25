@@ -26,7 +26,8 @@ module Manager =
     let init = loadDex
 
     [<JavaScript>]
-    type VMObject = VMObj of Dex.Class * Dictionary<Dex.Field, RegValue>
+    type VMObject = | VMInstance of Dex.Class * Dictionary<Dex.Field, RegValue>
+                    | VMArray of Dex.JavaType * RegValue array
 
     [<JavaScript>]
     let heap : VMObject array = [| |]
@@ -39,7 +40,14 @@ module Manager =
 
     [<JavaScript>]
     let createInstance (cls : Dex.Class) =
-        Array.push heap <| VMObj (cls, Dictionary ())
+        Array.push heap <| VMInstance (cls, Dictionary ())
+        heap.Length - 1
+
+    [<JavaScript>]
+    let createArray (dtype : Dex.Type, size : int) =
+        match Runtime.javatypeOfType dtype with
+        | JavaReferenceType (ArrayType t) -> Array.push heap <| VMArray (t, Array.create size JavaScript.Undefined)
+        | _ -> failwith "Bad array type"
         heap.Length - 1
 
     [<JavaScript>]
@@ -89,18 +97,40 @@ module Manager =
             | None -> let (Type descr) = dtype in failwith <| "Unknown class: " + descr
         | ResolveMethod (refr, meth) ->
             match dereference refr with
-            | VMObj (cls, r) ->
+            | VMInstance (cls, r) ->
                 let resolved = resolveMethod cls meth
                 cont <| ProvideMethod resolved
+            | _ -> failwith "Instance expected"
         | CreateInstance dtype ->
             cont << ProvideInstance << createInstance << classOfType <| dtype
+        | CreateArray (size, dtype) ->
+            cont << ProvideInstance <| createArray (dtype, size)
+        | FillArray (refr, vals) ->
+            match heap.[refr] with
+            | VMArray (t, a) ->
+                let n = Array.append vals (Array.sub a vals.Length (a.Length - vals.Length))
+                heap.[refr] <- VMArray (t, n)
+                cont RequestProcessed
+            | _ -> failwith "Array expected"
+        | GetArrayItem (refr, i) ->
+            match heap.[refr] with
+            | VMArray (_, a) -> cont << ProvideValue <| a.[i]
+            | _ -> failwith "Array expected"
+        | PutArrayItem (refr, i, v) ->
+            match heap.[refr] with
+            | VMArray (t, a) ->
+                a.[i] <- v
+                cont RequestProcessed
+            | _ -> failwith "Array expected"
         | GetInstanceField (refr, f) ->
-            let (VMObj (_, d)) = heap.[refr]
-            cont << ProvideValue <| d.[f]
+            match heap.[refr] with
+            | VMInstance (_, d) -> cont << ProvideValue <| d.[f]
+            | _ -> failwith "Instance expected"
         | PutInstanceField (refr, f, v) ->
-            let (VMObj (_, d)) = heap.[refr]
-            d.[f] <- v
-            cont RequestProcessed
+            match heap.[refr] with
+            | VMInstance (_, d) -> d.[f] <- v
+                                   cont RequestProcessed
+            | _ -> failwith "Instance expected"
         | GetStaticField f ->
             let (Field (dtype, _, _)) = f
             ensureClassInitialised dtype (fun d ->

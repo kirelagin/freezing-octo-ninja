@@ -18,7 +18,7 @@ module Dex =
     [<JavaScript>]
     let reg n : reg = float64 n
 
-    // Dalvi reference
+    // Dalvik reference
     type dref = int
 
     [<JavaScript>]
@@ -236,3 +236,19 @@ module Dex =
                     | ShlIntLit of reg * reg * int32
                     | ShrIntLit of reg * reg * int32
         (* ...e2 *) | UshrIntLit of reg * reg * int32
+
+
+    type PrimitiveType = | BooleanType
+                         | ByteType
+                         | ShortType
+                         | CharType
+                         | IntType
+                         | LongType
+                         | FloatType
+                         | DoubleType
+
+    and  ReferenceType = | ObjectType of Type
+                         | ArrayType of JavaType
+
+    and  JavaType = | JavaReferenceType of ReferenceType
+                    | JavaPrimitiveType of PrimitiveType
