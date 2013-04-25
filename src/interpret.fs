@@ -255,6 +255,10 @@ module ThreadWorker =
                         getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, m) args next)
                     // TODO: static and super
 
+                // ops missing…
+
+                | IntToSmall (_, (d, s)) -> this.SetReg (d, this.GetReg s); next ()
+
                 | AddInt (d, a, b) ->
                     this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + Store.loadInt (this.GetReg b))); next ()
 

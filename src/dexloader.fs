@@ -501,9 +501,9 @@ module DexLoader =
                     | 0x8Auy -> DoubleToInt << OpFormat.read12x
                     | 0x8Buy -> DoubleToLong << OpFormat.read12x
                     | 0x8Cuy -> DoubleToFloat << OpFormat.read12x
-                    | 0x8Duy -> IntToByte << OpFormat.read12x
-                    | 0x8Euy -> IntToChar << OpFormat.read12x
-                    | 0x8Fuy -> IntToShort << OpFormat.read12x
+                    | 0x8Duy -> curry IntToSmall SmallIntByte << OpFormat.read12x
+                    | 0x8Euy -> curry IntToSmall SmallIntChar << OpFormat.read12x
+                    | 0x8Fuy -> curry IntToSmall SmallIntShort << OpFormat.read12x
 
                     | 0x90uy -> AddInt  << OpFormat.read23x
                     | 0x91uy -> SubInt  << OpFormat.read23x

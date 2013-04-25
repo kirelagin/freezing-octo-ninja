@@ -18,6 +18,21 @@ module Dex =
     [<JavaScript>]
     let reg n : reg = float64 n
 
+
+    type SmallIntegerType = | SmallIntByte
+                            | SmallIntChar
+                            | SmallIntShort
+
+    type IntegerType = | IntegerInt
+                       | IntegerLong
+
+    type FloatingType = | FloatingFloat
+                        | FloatingDouble
+
+    type PrincipalNumberType = | PrincipalInteger of IntegerType
+                               | PrincipalFloating of FloatingType
+
+
     // Dalvik reference
     type dref = int
 
@@ -188,9 +203,7 @@ module Dex =
                     | DoubleToInt of reg * reg
                     | DoubleToLong of reg * reg
                     | DoubleToFloat of reg * reg
-                    | IntToByte of reg * reg
-                    | IntToChar of reg * reg
-        (* ...8f *) | IntToShort of reg * reg
+        (* ...8f *) | IntToSmall of SmallIntegerType * (reg * reg)
 
         (* 90... *) | AddInt of reg * reg * reg
                     | SubInt of reg * reg * reg
@@ -236,6 +249,7 @@ module Dex =
                     | ShlIntLit of reg * reg * int32
                     | ShrIntLit of reg * reg * int32
         (* ...e2 *) | UshrIntLit of reg * reg * int32
+
 
 
     type PrimitiveType = | BooleanType
