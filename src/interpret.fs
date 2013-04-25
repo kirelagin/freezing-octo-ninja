@@ -159,7 +159,13 @@ module ThreadWorker =
                 | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
                 | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v); next ()
                 | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16)); next ()
-                | ConstString (r, p) -> this.SetReg (r, RegAny << As<obj> <| p); next ()
+                | ConstString (r, s) -> createArray (s.Length, Dex.Type "C") (fun aref ->
+                                            fillArray (aref, Array.map Store.storeInt << String.toIntArray <| s) (fun () ->
+                                                let strtype = Dex.Type "Ljava/lang/String;"
+                                                createInstance strtype (fun str ->
+                                                    let proto = Dex.Proto ("VIIL", Dex.Type "V", [| Dex.Type "I"; Dex.Type "I"; Dex.Type "[C" |])
+                                                    let meth = Dex.Method (strtype, proto, "<init>")
+                                                    getMethodImpl meth true (fun m -> thread.ExecuteMethod (strtype, m) [| Store.storeInt 0; Store.storeInt s.Length; RegRef aref|] next))))
                 //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
 
                 //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message
