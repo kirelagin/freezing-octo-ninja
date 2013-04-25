@@ -63,6 +63,12 @@ module ThreadWorker =
             | RequestProcessed -> cont ()
             | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
 
+    [<JavaScript>]
+    let getArrayLength (refr : dref) (cont : RegValue -> unit) =
+        requestResource (GetArrayLength refr, fun r ->
+            match r with
+            | ProvideValue v -> cont v
+            | _ -> failwith <| "Unexpected reply. I need a value but got a " + r.ToString ())
 
     [<JavaScript>]
     let arrayGet (refr : dref) (i : int32) (cont : RegValue -> unit) =
@@ -172,6 +178,11 @@ module ThreadWorker =
                 //| MonitorExit r -> this.GetReg r // TODO: send monitor-enter message
 
                 // ops missing…
+
+                | ArrayLength (d, r) ->
+                    match this.GetReg r with
+                    | RegRef dref -> getArrayLength dref (fun l -> this.SetReg (d, l); next ())
+                    | _ -> failwith "array-length on non-object"
 
                 | NewInstance (r, t) -> createInstance t (fun dref ->
                                                             this.SetReg (r, RegRef dref)

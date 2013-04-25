@@ -112,6 +112,11 @@ module Manager =
                 heap.[refr] <- VMArray (t, n)
                 cont RequestProcessed
             | _ -> failwith "Array expected"
+        | GetArrayLength refr ->
+            match heap.[refr] with
+            | VMArray (_, a) ->
+                cont << ProvideValue << Store.storeInt <| a.Length
+            | _ -> failwith "Array expected"
         | GetArrayItem (refr, i) ->
             match heap.[refr] with
             | VMArray (_, a) -> cont << ProvideValue <| a.[i]
