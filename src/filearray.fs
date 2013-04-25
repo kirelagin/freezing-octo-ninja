@@ -4,9 +4,6 @@ module FileArray =
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
 
-    [<Inline "String.fromCharCode.apply(null, $bs)">]
-    let charsToString (bs : int array) : string = X<_> // HACK: `System.Text.Encoding` is not working =(
-
     [<Name [| "DataView" |]>]
     [<Stub>]
     type DataView (data : ArrayBuffer) =
@@ -143,4 +140,4 @@ module FileArray =
                         Array.push out (((a &&& 0x0F) <<< 12) ||| ((b &&& 0x3F) <<< 6) ||| (c &&& 0x3F))
                     else
                         failwith "MUTF-8: Bad byte"
-            charsToString out
+            String.fromIntArray out

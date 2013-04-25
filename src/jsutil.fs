@@ -40,6 +40,16 @@ module JsUtil =
         [<Inline "isFinite($v)">]
         let isFinite (v : 'a) : bool = X<_>
 
+    module String =
+        [<Inline "unescape(encodeURIComponent($s)).split('').map(function(c){return c.charCodeAt()})">]
+        let toByteArray (s : string) : byte array = X<_>
+
+        [<Inline "s.split('').map(function(c){return c.charCodeAt()})">]
+        let toIntArray (s : string) : int array = X<_>
+
+        [<Inline "String.fromCharCode.apply(null, $bs)">]
+        let fromIntArray (bs : int array) : string = X<_>
+
     [<Name [| "gLong" |]>]
     [<Stub>]
     type GLong private () =
