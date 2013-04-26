@@ -227,14 +227,21 @@ module ThreadWorker =
                     let i = match offset with
                             | AbsoluteIndex i -> i
                             | RelativeBytes _ -> failwith "Unresolved offset"
-                    let va = Store.loadInt (this.GetReg a)
-                    let jump = match kind with
-                               | Eq -> va = 0
-                               | Ne -> va <> 0
-                               | Lt -> va < 0
-                               | Ge -> va >= 0
-                               | Gt -> va > 0
-                               | Le -> va <= 0
+                    let jump = match this.GetReg a with
+                               | RegRef _ ->
+                                    match kind with
+                                    | Eq -> false
+                                    | Ne -> true
+                                    | _ -> failwith "Invalid comparison of reference value with zero"
+                               | _ ->
+                                    let va = Store.loadInt (this.GetReg a)
+                                    match kind with
+                                               | Eq -> va = 0
+                                               | Ne -> va <> 0
+                                               | Lt -> va < 0
+                                               | Ge -> va >= 0
+                                               | Gt -> va > 0
+                                               | Le -> va <= 0
                     if jump then goto i else next ()
 
                 | Aget (d, r, i) ->
