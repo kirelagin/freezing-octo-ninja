@@ -165,7 +165,7 @@ module ThreadWorker =
                 | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
                 | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v); next ()
                 | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16)); next ()
-                | ConstString (r, s) -> createArray (s.Length, Dex.Type "C") (fun aref ->
+                | ConstString (r, s) -> createArray (s.Length, Dex.Type "[C") (fun aref ->
                                             fillArray (aref, Array.map Store.storeInt << String.toIntArray <| s) (fun () ->
                                                 let strtype = Dex.Type "Ljava/lang/String;"
                                                 createInstance strtype (fun str ->

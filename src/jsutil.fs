@@ -44,7 +44,7 @@ module JsUtil =
         [<Inline "unescape(encodeURIComponent($s)).split('').map(function(c){return c.charCodeAt()})">]
         let toByteArray (s : string) : byte array = X<_>
 
-        [<Inline "s.split('').map(function(c){return c.charCodeAt()})">]
+        [<Inline "$s.split('').map(function(c){return c.charCodeAt()})">]
         let toIntArray (s : string) : int array = X<_>
 
         [<Inline "String.fromCharCode.apply(null, $bs)">]
