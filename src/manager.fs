@@ -134,7 +134,11 @@ module Manager =
             | _ -> failwith "Array expected"
         | GetInstanceField (refr, f) ->
             match heap.[refr] with
-            | VMInstance (_, d) -> cont << ProvideValue <| d.[f]
+            | VMInstance (_, d) ->
+                let v = match Dictionary.tryGet d f with
+                        | Some v -> v
+                        | None -> Runtime.defaultValue f
+                cont << ProvideValue <| v
             | _ -> failwith "Instance expected"
         | PutInstanceField (refr, f, v) ->
             match heap.[refr] with
