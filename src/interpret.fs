@@ -136,7 +136,7 @@ module ThreadWorker =
     and 
      [<JavaScript>]
         ThreadFrame (thread : Thread, thisclass : Type, insns : Instruction array, registers_size : int, args : RegValue array) =
-        let regs = Array.append (Array.create (registers_size - args.Length) JavaScript.Undefined) args
+        let regs = Array.append (Array.create (registers_size - args.Length) (Store.storeInt 0)) args
 
         member this.Thread () = thread
         member this.GetReg (i : reg) = regs.[int i]
@@ -171,7 +171,8 @@ module ThreadWorker =
                                                 createInstance strtype (fun str ->
                                                     let proto = Dex.Proto ("VIIL", Dex.Type "V", [| Dex.Type "I"; Dex.Type "I"; Dex.Type "[C" |])
                                                     let meth = Dex.Method (strtype, proto, "<init>")
-                                                    getMethodImpl meth true (fun m -> thread.ExecuteMethod (strtype, m) [| Store.storeInt 0; Store.storeInt s.Length; RegRef aref|] next))))
+                                                    getMethodImpl meth true (fun m ->
+                                                        thread.ExecuteMethod (strtype, m) [| RegRef str; Store.storeInt 0; Store.storeInt s.Length; RegRef aref|] next))))
                 //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
 
                 //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message

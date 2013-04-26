@@ -77,7 +77,7 @@ module Manager =
     [<JavaScript>]
     let createArray (dtype : Dex.Type, size : int) =
         match Runtime.javatypeOfType dtype with
-        | JavaReferenceType (ArrayType t) -> Array.push heap <| VMArray (t, Array.create size JavaScript.Undefined)
+        | JavaReferenceType (ArrayType t) -> Array.push heap <| VMArray (t, Array.create size (Store.storeInt 0))
         | _ -> failwith "Bad array type"
         heap.Length - 1
 
