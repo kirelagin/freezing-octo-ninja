@@ -47,3 +47,4 @@ module FsUtil =
             | Some (_, v) -> Some v
             | None -> None
         let tryGet (d : dumbdict<'k, 'v>) (k : 'k) = tryGetWith (=) d k
+        let keys (d : dumbdict<'k, 'v>) : 'k array = Array.map (fun (k, v) -> k) d

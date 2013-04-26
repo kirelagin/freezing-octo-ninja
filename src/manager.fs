@@ -37,7 +37,8 @@ module Manager =
             let d = Dictionary ()
             library.[t] <- Initialised (c, d)
             match c with
-            | Class (_, _, _, _, Some cimpl) ->
+            | Class (_, _, _, _, Some (ClassImpl (fs, _, _, _))) ->
+                Array.iter (fun f -> d.[f] <- Runtime.defaultValue f) <| Dumbdict.keys fs
                 let clinit = Dex.Method (t, Proto ("V", Type "V", [| |]), "<clinit>")
                 match Runtime.getMethodImpl c true clinit with
                 | None -> cont <| (c, d)

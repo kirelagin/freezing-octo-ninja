@@ -28,3 +28,10 @@ module Runtime =
         | StartsWith "L" rest -> Dex.JavaReferenceType << Dex.ObjectType <| t
         | StartsWith "[" rest -> Dex.JavaReferenceType << Dex.ArrayType <| javatypeOfType (Dex.Type rest)
         | _ -> failwith <| "Invalid type descriptor: " + descr
+
+    let defaultValue (Dex.Field (_, t, _)) =
+        match javatypeOfType t with
+        | Dex.JavaPrimitiveType Dex.LongType -> Dex.Store.storeLong <| GLong.FromInt 0
+        | Dex.JavaPrimitiveType Dex.DoubleType -> Dex.Store.storeDouble 0.0
+        | Dex.JavaPrimitiveType Dex.FloatType -> Dex.Store.storeFloat 0.0f
+        | _ -> Dex.Store.storeInt 0
