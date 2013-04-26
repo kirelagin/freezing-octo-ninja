@@ -7,8 +7,11 @@ module Manager =
     open Dex
     open Shared
 
+    type LoadedClass = | JustLoaded of Dex.Class
+                       | Initialised of Dex.Class * Dictionary<Dex.Field, RegValue>
+
     [<JavaScript>]
-    let library : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
+    let library : Dictionary<Dex.Type, LoadedClass> = Dictionary ()
 
     [<JavaScript>]
     let loadedFiles : DexLoader.DexFile array = [| |]
@@ -16,7 +19,7 @@ module Manager =
     [<JavaScript>]
     let registerClass (cls : Dex.Class) =
         let (Class (dtype, _, _, _, _)) = cls
-        library.[dtype] <- cls
+        library.[dtype] <- JustLoaded cls
 
     [<JavaScript>]
     let loadDex (bytes : ArrayBuffer) =
@@ -24,6 +27,32 @@ module Manager =
 
     [<JavaScript>]
     let init = loadDex
+
+
+    [<JavaScript>]
+    let ensureClassInitialised (t : Dex.Type) (cont : Dex.Class * Dictionary<Dex.Field, RegValue> -> unit) =
+        match Dictionary.tryGet library t with
+        | Some (Initialised (c, d)) -> cont (c, d)
+        | Some (JustLoaded c) ->
+            let d = Dictionary ()
+            library.[t] <- Initialised (c, d)
+            match c with
+            | Class (_, _, _, _, Some cimpl) ->
+                let clinit = Dex.Method (t, Proto ("V", Type "V", [| |]), "<clinit>")
+                match Runtime.getMethodImpl c true clinit with
+                | None -> cont <| (c, d)
+                | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (t, impl) [| |] (fun () -> cont (c, d)) 
+            | Class (_, _, _, _, None) -> cont (c, d)
+        | None -> failwith "Type without associated class!"
+
+    [<JavaScript>]
+    let classOfType (t : Dex.Type) (cont : Dex.Class -> unit) =
+        ensureClassInitialised t <| fun (c, _) -> cont c
+
+    [<JavaScript>]
+    let classStaticData (t : Dex.Type) (cont : Dictionary<Dex.Field, RegValue> -> unit) =
+        ensureClassInitialised t <| fun (_, d) -> cont d
+
 
     [<JavaScript>]
     type VMObject = | VMInstance of Dex.Class * Dictionary<Dex.Field, RegValue>
@@ -39,9 +68,10 @@ module Manager =
         inst
 
     [<JavaScript>]
-    let createInstance (cls : Dex.Class) =
-        Array.push heap <| VMInstance (cls, Dictionary ())
-        heap.Length - 1
+    let createInstance (t : Dex.Type) (cont : dref -> unit) =
+        classOfType t <| fun c ->
+            Array.push heap <| VMInstance (c, Dictionary ())
+            cont <| heap.Length - 1
 
     [<JavaScript>]
     let createArray (dtype : Dex.Type, size : int) =
@@ -51,58 +81,32 @@ module Manager =
         heap.Length - 1
 
     [<JavaScript>]
-    let classOfType (t : Dex.Type) =
-        match Dictionary.tryGet library t with
-        | Some c -> c
-        | None -> failwith "Type without associated class!"
-
-    [<JavaScript>]
-    let initialisedClasses : Dictionary<Dex.Type, Dictionary<Dex.Field, RegValue>> = Dictionary ()
-
-    [<JavaScript>]
-    let ensureClassInitialised (dtype : Dex.Type) (cont : Dictionary<Dex.Field, RegValue> -> unit) =
-        match Dictionary.tryGet initialisedClasses dtype with
-        | Some d -> cont d
-        | None ->
-            let d = Dictionary ()
-            initialisedClasses.Add(dtype, d)
-            let cls = classOfType dtype
-            let clinit = Dex.Method (dtype, Proto ("V", Type "V", [| |]), "<clinit>")
-            match Runtime.getMethodImpl cls true clinit with
-            | None -> cont <| d
-            | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (dtype, impl) [| |] (fun () -> cont d) 
-
-    [<JavaScript>]
-    let rec resolveMethod (cls : Dex.Class) (meth : Dex.Method)  =
+    let rec resolveMethod (cls : Dex.Class) (meth : Dex.Method) (cont : Dex.Type * Dex.MethodImpl -> unit) =
         let (Class (dtype, _, super, _, impl)) = cls
         match impl with
         | None -> failwith "Class without class_data"
         | Some (ClassImpl (_, _, _, virt)) ->
             let m = Dumbdict.tryGetWith (fun (Method (_, p1, n1)) (Method (_, p2, n2)) -> n1 = n2 && p1 = p2) virt meth
             match m with
-            | Some (_, Some method_impl) -> (dtype, method_impl)
+            | Some (_, Some method_impl) -> cont (dtype, method_impl)
             | Some (_, None) -> failwith "Method not implemented" //TODO #10 throw IncompatibleClassChangeError
             | None ->
                 match super with
                 | None -> failwith "Method not found" //TODO #10 throw IncompatibleClassChangeError
-                | Some t -> resolveMethod (classOfType t) meth
+                | Some t -> classOfType t <| fun c -> resolveMethod c meth cont
 
     [<JavaScript>]
     let processRequest (r : ResourceRequest, cont : ResourceReply -> unit) =
         match r with
         | RequestClass (dtype) ->
-            match Dictionary.tryGet library dtype with
-            | Some c ->
-                ensureClassInitialised dtype (fun _ -> cont <| ProvideClass c)
-            | None -> let (Type descr) = dtype in failwith <| "Unknown class: " + descr
+            classOfType dtype (ProvideClass >> cont)
         | ResolveMethod (refr, meth) ->
             match dereference refr with
             | VMInstance (cls, r) ->
-                let resolved = resolveMethod cls meth
-                cont <| ProvideMethod resolved
+                resolveMethod cls meth (ProvideMethod >> cont)
             | _ -> failwith "Instance expected"
         | CreateInstance dtype ->
-            cont << ProvideInstance << createInstance << classOfType <| dtype
+            createInstance dtype (ProvideInstance >> cont)
         | CreateArray (size, dtype) ->
             cont << ProvideInstance <| createArray (dtype, size)
         | FillArray (refr, vals) ->
@@ -138,10 +142,9 @@ module Manager =
             | _ -> failwith "Instance expected"
         | GetStaticField f ->
             let (Field (dtype, _, _)) = f
-            ensureClassInitialised dtype (fun d ->
-                                            cont << ProvideValue <| d.[f])
+            classStaticData dtype <| fun d -> cont << ProvideValue <| d.[f]
         | PutStaticField (f, v) ->
             let (Field (dtype, _, _)) = f
-            ensureClassInitialised dtype (fun d ->
-                                            d.[f] <- v
-                                            cont RequestProcessed)
+            classStaticData dtype <| fun d ->
+                                        d.[f] <- v
+                                        cont RequestProcessed
