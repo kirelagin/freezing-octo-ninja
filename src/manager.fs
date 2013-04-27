@@ -82,32 +82,17 @@ module Manager =
         heap.Length - 1
 
     [<JavaScript>]
-    let rec resolveMethod (cls : Dex.Class) (meth : Dex.Method) (cont : Dex.Type * Dex.MethodImpl -> unit) =
-        let (Class (dtype, _, super, _, impl)) = cls
-        match impl with
-        | None -> failwith "Class without class_data"
-        | Some (ClassImpl (_, _, _, virt)) ->
-            let m = Dumbdict.tryGetWith (fun (Method (_, p1, n1)) (Method (_, p2, n2)) -> n1 = n2 && p1 = p2) virt meth
-            match m with
-            | Some (_, Some method_impl) -> cont (dtype, method_impl)
-            | Some (_, None) -> failwith "Method not implemented" //TODO #10 throw IncompatibleClassChangeError
-            | None ->
-                match super with
-                | None -> failwith "Method not found" //TODO #10 throw IncompatibleClassChangeError
-                | Some t -> classOfType t <| fun c -> resolveMethod c meth cont
-
-    [<JavaScript>]
     let processRequest (r : ResourceRequest, cont : ResourceReply -> unit) =
         match r with
         | RequestClass (dtype) ->
             classOfType dtype (ProvideClass >> cont)
-        | ResolveMethod (refr, meth) ->
-            match dereference refr with
-            | VMInstance (cls, r) ->
-                resolveMethod cls meth (ProvideMethod >> cont)
-            | _ -> failwith "Instance expected"
         | CreateInstance dtype ->
             createInstance dtype (ProvideInstance >> cont)
+        | GetObjectType refr ->
+            match heap.[refr] with
+            | VMInstance (Class (t, _, _, _, _), _) ->
+                cont << ProvideType <| t
+            | _ -> failwith "Instance expected"
         | CreateArray (size, dtype) ->
             cont << ProvideInstance <| createArray (dtype, size)
         | FillArray (refr, vals) ->

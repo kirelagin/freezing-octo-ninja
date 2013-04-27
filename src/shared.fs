@@ -5,8 +5,8 @@ module Shared =
 
     [<JavaScript>]
     type ResourceRequest =
+        | GetObjectType of Dex.dref
         | RequestClass of Dex.Type
-        | ResolveMethod of Dex.dref * Dex.Method
         | CreateInstance of Dex.Type
         | CreateArray of int32 * Dex.Type
         | FillArray of Dex.dref * Dex.RegValue array
@@ -20,8 +20,8 @@ module Shared =
 
     [<JavaScript>]
     type ResourceReply =
+        | ProvideType of Dex.Type
         | ProvideClass of Dex.Class
-        | ProvideMethod of Dex.Type * Dex.MethodImpl
         | ProvideInstance of Dex.dref
         | ProvideValue of Dex.RegValue
         | RequestProcessed

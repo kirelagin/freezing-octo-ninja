@@ -15,6 +15,13 @@ module ThreadWorker =
     let cacheClasses : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
 
     [<JavaScript>]
+    let getObjectType (refr : dref) (cont : Dex.Type -> unit) =
+        requestResource (GetObjectType refr, fun r ->
+            match r with
+            | ProvideType t -> cont t
+            | _ -> failwith <| "Unexpected reply. I need a type but got a " + r.ToString ())
+
+    [<JavaScript>]
     let getClass (dtype : Dex.Type) (cont : Dex.Class -> unit) =
         match Dictionary.tryGet cacheClasses dtype with
         | Some c -> cont c
@@ -33,13 +40,6 @@ module ThreadWorker =
                             match Runtime.getMethodImpl c direct meth with
                             | None -> failwith "Method not found"
                             | Some impl -> cont impl
-
-    [<JavaScript>]
-    let getVirtualMethod (refr : dref, meth : Dex.Method) (cont : Dex.Type * Dex.MethodImpl -> unit) =
-        requestResource (ResolveMethod (refr, meth), fun r ->
-            match r with
-                | ProvideMethod (t, m) -> cont (t, m)
-                | _ -> failwith <| "Unexpected reply. I need a Method but got a " + r.ToString ())
 
 
     [<JavaScript>]
@@ -111,6 +111,24 @@ module ThreadWorker =
             match r with
             | RequestProcessed -> cont ()
             | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
+
+
+    [<JavaScript>]
+    let rec resolveMethod (t : Dex.Type) (meth : Dex.Method) (cont : Dex.Type * Dex.MethodImpl -> unit) =
+        getClass t <| fun cls ->
+            let (Class (_, _, super, _, impl)) = cls
+            match impl with
+            | None -> failwith "Class without class_data"
+            | Some (ClassImpl (_, _, _, virt)) ->
+                let m = Dumbdict.tryGetWith (fun (Method (_, p1, n1)) (Method (_, p2, n2)) -> n1 = n2 && p1 = p2) virt meth
+                match m with
+                | Some (_, Some method_impl) -> cont (t, method_impl)
+                | Some (_, None) -> failwith "Method not implemented" //TODO #10 throw IncompatibleClassChangeError
+                | None ->
+                    match super with
+                    | None -> failwith "Method not found" //TODO #10 throw IncompatibleClassChangeError
+                    | Some t -> resolveMethod t meth cont
+
 
     [<JavaScript>]
     type Thread () =
@@ -271,14 +289,23 @@ module ThreadWorker =
                     match kind with
                     | InvokeVirtual
                     | InvokeInterface ->
-                        let o = match this.GetReg a1 with
-                                | RegRef dref -> dref
-                                | _ -> failwith "Invoking a method on non-object"
-                        getVirtualMethod (o, meth) (fun m -> thread.ExecuteMethod m args next)
+                        match this.GetReg a1 with
+                        | RegRef r ->
+                            getObjectType r <| fun t ->
+                                resolveMethod t meth (fun x -> thread.ExecuteMethod x args next)
+                        | _ -> failwith "invoke-interface on non-object"
                     | InvokeDirect ->
                         let (Method (dtype, _, _)) = meth
                         getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, m) args next)
-                    // TODO: static and super
+                    | InvokeSuper ->
+                        match this.GetReg a1 with
+                        | RegRef r ->
+                            getObjectType r <| fun t ->
+                                getClass t <| fun (Class (_, _, s, _, _)) ->
+                                    match s with
+                                    | Some supert -> resolveMethod supert meth (fun x -> thread.ExecuteMethod x args next)
+                                    | None -> failwith "invoke-supert on class that doesn't have a super"
+                        | _ -> failwith "invoke-super on non-object"
 
                 // ops missing…
 
