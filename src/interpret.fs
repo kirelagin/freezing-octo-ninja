@@ -187,6 +187,7 @@ module ThreadWorker =
                                             fillArray (aref, Array.map Store.storeInt << String.toIntArray <| s) (fun () ->
                                                 let strtype = Dex.Type "Ljava/lang/String;"
                                                 createInstance strtype (fun str ->
+                                                    this.SetReg (r, RegRef str)
                                                     let proto = Dex.Proto ("VIIL", Dex.Type "V", [| Dex.Type "I"; Dex.Type "I"; Dex.Type "[C" |])
                                                     let meth = Dex.Method (strtype, proto, "<init>")
                                                     getMethodImpl meth true (fun m ->
