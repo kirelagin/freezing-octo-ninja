@@ -4,6 +4,7 @@ open IntelliFactory.WebSharper
 
 [<JavaScript>]
 module Runtime =
+    open Coretypes    
 
     let getMethodImpl (Dex.Class (_, _, _, _, impl)) (direct : bool) (meth : Dex.Method) =
         match impl with
@@ -31,7 +32,7 @@ module Runtime =
 
     let defaultValue (Dex.Field (_, t, _)) =
         match javatypeOfType t with
-        | Dex.JavaPrimitiveType Dex.LongType -> Dex.Store.storeLong <| GLong.FromInt 0
-        | Dex.JavaPrimitiveType Dex.DoubleType -> Dex.Store.storeDouble 0.0
-        | Dex.JavaPrimitiveType Dex.FloatType -> Dex.Store.storeFloat 0.0f
-        | _ -> Dex.Store.storeInt 0
+        | Dex.JavaPrimitiveType Dex.LongType -> Store.storeLong <| GLong.FromInt 0
+        | Dex.JavaPrimitiveType Dex.DoubleType -> Store.storeDouble 0.0
+        | Dex.JavaPrimitiveType Dex.FloatType -> Store.storeFloat 0.0f
+        | _ -> Store.storeInt 0

@@ -5,6 +5,7 @@ module DexLoader =
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
 
+    open Coretypes
     open Dex
 
     [<JavaScript>]
@@ -296,12 +297,12 @@ module DexLoader =
                 | 0x06uy -> Store.storeLong <| stream.GetInt64Var (int value_arg + 1)
                 | 0x10uy -> Store.storeFloat <| stream.GetFloatVar (int value_arg + 1)
                 | 0x11uy -> Store.storeDouble <| stream.GetDoubleVar (int value_arg + 1)
-                | 0x17uy -> RegAny << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x18uy -> RegAny << As<obj> <| dexf.Types.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x19uy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x1Auy -> RegAny << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x1Buy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                | 0x1Cuy -> RegAny << As<obj> <| DexFile.Read_encoded_array stream dexf
+                //| 0x17uy -> RegAny << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                //| 0x18uy -> RegAny << As<obj> <| dexf.Types.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                //| 0x19uy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                //| 0x1Auy -> RegAny << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                //| 0x1Buy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                //| 0x1Cuy -> RegAny << As<obj> <| DexFile.Read_encoded_array stream dexf
                 | 0x1Duy -> failwith "Annotations are not supported" //TODO #5
                 | 0x1Euy -> JavaScript.Undefined
                 | 0x1Fuy -> Store.storeInt << int32 <| value_arg
@@ -377,9 +378,9 @@ module DexLoader =
                                     let element_width = int <| stream.GetUInt16 ()
                                     let size = int <| stream.GetUInt32 ()
                                     let data = if element_width <= 4 then
-                                                    Array.init size (fun _ -> Dex.Store.storeInt <| stream.GetInt32Var element_width)
+                                                    Array.init size (fun _ -> Store.storeInt <| stream.GetInt32Var element_width)
                                                 elif element_width = 8 then
-                                                    Array.init size (fun _ -> Dex.Store.storeLong <| stream.GetInt64 ())
+                                                    Array.init size (fun _ -> Store.storeLong <| stream.GetInt64 ())
                                                 else
                                                     failwith "Bad element width in fill-array-data-payload"
                                     stream.Seek oldoff |> ignore
