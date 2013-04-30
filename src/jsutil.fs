@@ -64,9 +64,9 @@ module JsUtil =
         static member FromNumber (value : float64) : GLong = X<_>
 
         [<Name "toInt">]
-        member this.toInt () : int32 = X<_>
+        member this.ToInt () : int32 = X<_>
         [<Name "toNumber">]
-        member this.toNumber () : float64 = X<_>
+        member this.ToNumber () : float64 = X<_>
         [<Name "getHighBits">]
         member this.GetHighBits () : int32 = X<_>
         [<Name "getLowBits">]

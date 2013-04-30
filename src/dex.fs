@@ -28,8 +28,8 @@ module Dex =
         let doubleToLong (i : float64) : GLong = if i = infinity then GLong.MAX_VALUE elif i = -infinity then GLong.MIN_VALUE else GLong.FromNumber i
         let doubleToFloat (i : float64) : float32 = (new Float32Array([| float32 i |])).Get(0uL) //TODO #11
 
-        let longToInt (i : GLong) : int32 = i.toInt()
-        let longToDouble (i : GLong) : float64 = i.toNumber()
+        let longToInt (i : GLong) : int32 = i.ToInt()
+        let longToDouble (i : GLong) : float64 = i.ToNumber()
         let longToFloat (i : GLong) : float32 = longToDouble i |> doubleToFloat
 
         let floatToDouble (i : float32) : float64 = float64 i
