@@ -415,8 +415,26 @@ module ThreadWorker =
 
                 | AddIntLit (d, a, i) ->
                     this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + i)); next ()
-
-                // ops missing…
+                | RsubIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (i - Store.loadInt (this.GetReg a))); next ()
+                | MulIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) * i)); next ()
+                | DivIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) / i)); next ()
+                | RemIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) % i)); next ()
+                | AndIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) &&& i)); next ()
+                | OrIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) ||| i)); next ()
+                | XorIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) ^^^ i)); next ()
+                | ShlIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) <<< (i &&& 0x1F))); next ()
+                | ShrIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) >>> (i &&& 0x1F))); next ()
+                | UshrIntLit (d, a, i) ->
+                    this.SetReg(d, Store.storeInt << int <| ((uint32 <| Store.loadInt (this.GetReg a)) >>> (i &&& 0x1F))); next ()
 
     [<JavaScript>]
     let mutable thread = None
