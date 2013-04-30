@@ -309,6 +309,25 @@ module ThreadWorker =
                                     | None -> failwith "invoke-supert on class that doesn't have a super"
                         | _ -> failwith "invoke-super on non-object"
 
+                | Neg (t, (d, a)) ->
+                    let v = this.GetReg a
+                    let newval =
+                        match t with
+                        | CoreInteger IntegerInt -> Store.storeInt <| -Store.loadInt v
+                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v).Negate ()
+                        | CoreFloating FloatingFloat -> Store.storeFloat <| -Store.loadFloat v
+                        | CoreFloating FloatingDouble -> Store.storeDouble <| -Store.loadDouble v
+                    this.SetReg(d, newval)
+                    next ()
+                | Not (t, (d, a)) ->
+                    let v = this.GetReg a
+                    let newval =
+                        match t with
+                        | IntegerInt -> Store.storeInt <| ~~~(Store.loadInt v)
+                        | IntegerLong -> Store.storeLong <| (Store.loadLong v).Not ()
+                    this.SetReg(d, newval)
+                    next ()
+
                 // ops missing…
 
                 | IntToSmall (_, (d, s)) -> this.SetReg (d, this.GetReg s); next ()

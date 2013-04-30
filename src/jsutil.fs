@@ -89,6 +89,8 @@ module JsUtil =
         [<Name "modulo">]
         member this.Modulo (other : GLong) : GLong  = X<_>
 
+        [<Name "not">]
+        member this.Not () : GLong  = X<_>
         [<Name "and">]
         member this.And (other : GLong) : GLong  = X<_>
         [<Name "or">]
