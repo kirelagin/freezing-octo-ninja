@@ -4,6 +4,7 @@ module Manager =
     open System.Collections.Generic
     open IntelliFactory.WebSharper
     open IntelliFactory.WebSharper.Html5
+    open Coretypes
     open Dex
     open Shared
 
@@ -78,8 +79,8 @@ module Manager =
     let createArray (dtype : Dex.Type, size : int) =
         match Runtime.javatypeOfType dtype with
         | JavaReferenceType (ArrayType t) -> Array.push heap <| VMArray (t, Array.create size (Store.storeInt 0))
+                                             heap.Length - 1
         | _ -> failwith "Bad array type"
-        heap.Length - 1
 
     [<JavaScript>]
     let processRequest (r : ResourceRequest, cont : ResourceReply -> unit) =

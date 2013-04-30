@@ -4,6 +4,7 @@ module ThreadWorker =
     open System.Collections.Generic
     open IntelliFactory.WebSharper
     open Shared
+    open Coretypes
     open Dex
 
     // All kinds of communication with shared resources manager
@@ -312,8 +313,56 @@ module ThreadWorker =
 
                 | IntToSmall (_, (d, s)) -> this.SetReg (d, this.GetReg s); next ()
 
-                | AddInt (d, a, b) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + Store.loadInt (this.GetReg b))); next ()
+                | Add (t, (d, a, b)) ->
+                    let (v1, v2) = (this.GetReg a, this.GetReg b)
+                    let newval =
+                        match t with
+                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 + Store.loadInt v2
+                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Add (Store.loadLong v2)
+                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 + Store.loadFloat v2
+                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 + Store.loadDouble v2
+                    this.SetReg(d, newval)
+                    next ()
+                | Sub (t, (d, a, b)) ->
+                    let (v1, v2) = (this.GetReg a, this.GetReg b)
+                    let newval =
+                        match t with
+                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 - Store.loadInt v2
+                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Subtract (Store.loadLong v2)
+                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 - Store.loadFloat v2
+                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 - Store.loadDouble v2
+                    this.SetReg(d, newval)
+                    next ()
+                | Mul (t, (d, a, b)) ->
+                    let (v1, v2) = (this.GetReg a, this.GetReg b)
+                    let newval =
+                        match t with
+                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 * Store.loadInt v2
+                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Multiply (Store.loadLong v2)
+                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 * Store.loadFloat v2
+                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 * Store.loadDouble v2
+                    this.SetReg(d, newval)
+                    next ()
+                | Div (t, (d, a, b)) ->
+                    let (v1, v2) = (this.GetReg a, this.GetReg b)
+                    let newval =
+                        match t with
+                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 / Store.loadInt v2
+                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Div (Store.loadLong v2)
+                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 / Store.loadFloat v2
+                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 / Store.loadDouble v2
+                    this.SetReg(d, newval)
+                    next ()
+                | Rem (t, (d, a, b)) ->
+                    let (v1, v2) = (this.GetReg a, this.GetReg b)
+                    let newval =
+                        match t with
+                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 % Store.loadInt v2
+                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Modulo (Store.loadLong v2)
+                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 % Store.loadFloat v2
+                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 % Store.loadDouble v2
+                    this.SetReg(d, newval)
+                    next ()
 
                 // ops missing…
 

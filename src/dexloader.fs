@@ -483,93 +483,94 @@ module DexLoader =
                     | 0x77uy -> curry InvokeRange InvokeStatic << Arrows.secondOf3 (Array.get dexf.Methods << int) << OpFormat.read3rc
                     | 0x78uy -> curry InvokeRange InvokeInterface << Arrows.secondOf3 (Array.get dexf.Methods << int) << OpFormat.read3rc
 
-                    | 0x7Buy -> NegInt << OpFormat.read12x
-                    | 0x7Cuy -> NotInt << OpFormat.read12x
-                    | 0x7Duy -> NegLong << OpFormat.read12x
-                    | 0x7Euy -> NotLong << OpFormat.read12x
-                    | 0x7Fuy -> NegFloat << OpFormat.read12x
-                    | 0x80uy -> NegDouble << OpFormat.read12x
-                    | 0x81uy -> IntToLong << OpFormat.read12x
-                    | 0x82uy -> IntToFloat << OpFormat.read12x
-                    | 0x83uy -> IntToDouble << OpFormat.read12x
-                    | 0x84uy -> LongToInt << OpFormat.read12x
-                    | 0x85uy -> LongToFloat << OpFormat.read12x
-                    | 0x86uy -> LongToDouble << OpFormat.read12x
-                    | 0x87uy -> FloatToInt << OpFormat.read12x
-                    | 0x88uy -> FloatToLong << OpFormat.read12x
-                    | 0x89uy -> FloatToDouble << OpFormat.read12x
-                    | 0x8Auy -> DoubleToInt << OpFormat.read12x
-                    | 0x8Buy -> DoubleToLong << OpFormat.read12x
-                    | 0x8Cuy -> DoubleToFloat << OpFormat.read12x
+                    | 0x7Buy -> curry Neg (CoreInteger IntegerInt) << OpFormat.read12x
+                    | 0x7Cuy -> curry Not IntegerInt << OpFormat.read12x
+                    | 0x7Duy -> curry Neg (CoreInteger IntegerLong) << OpFormat.read12x
+                    | 0x7Euy -> curry Not IntegerLong << OpFormat.read12x
+                    | 0x7Fuy -> curry Neg (CoreFloating FloatingFloat) << OpFormat.read12x
+                    | 0x80uy -> curry Neg (CoreFloating FloatingDouble) << OpFormat.read12x
+
+                    | 0x81uy -> curry Convert (CoreInteger IntegerInt, CoreInteger IntegerLong) << OpFormat.read12x
+                    | 0x82uy -> curry Convert (CoreInteger IntegerInt, CoreFloating FloatingFloat) << OpFormat.read12x
+                    | 0x83uy -> curry Convert (CoreInteger IntegerInt, CoreFloating FloatingDouble)<< OpFormat.read12x
+                    | 0x84uy -> curry Convert (CoreInteger IntegerLong, CoreInteger IntegerInt) << OpFormat.read12x
+                    | 0x85uy -> curry Convert (CoreInteger IntegerLong, CoreFloating FloatingFloat) << OpFormat.read12x
+                    | 0x86uy -> curry Convert (CoreInteger IntegerLong, CoreFloating FloatingDouble) << OpFormat.read12x
+                    | 0x87uy -> curry Convert (CoreFloating FloatingFloat, CoreInteger IntegerInt) << OpFormat.read12x
+                    | 0x88uy -> curry Convert (CoreFloating FloatingFloat, CoreInteger IntegerLong) << OpFormat.read12x
+                    | 0x89uy -> curry Convert (CoreFloating FloatingFloat, CoreFloating FloatingDouble) << OpFormat.read12x
+                    | 0x8Auy -> curry Convert (CoreFloating FloatingDouble, CoreInteger IntegerInt) << OpFormat.read12x
+                    | 0x8Buy -> curry Convert (CoreFloating FloatingDouble, CoreInteger IntegerLong) << OpFormat.read12x
+                    | 0x8Cuy -> curry Convert (CoreFloating FloatingDouble, CoreFloating FloatingFloat) << OpFormat.read12x
                     | 0x8Duy -> curry IntToSmall SmallIntByte << OpFormat.read12x
                     | 0x8Euy -> curry IntToSmall SmallIntChar << OpFormat.read12x
                     | 0x8Fuy -> curry IntToSmall SmallIntShort << OpFormat.read12x
 
-                    | 0x90uy -> AddInt  << OpFormat.read23x
-                    | 0x91uy -> SubInt  << OpFormat.read23x
-                    | 0x92uy -> MulInt  << OpFormat.read23x
-                    | 0x93uy -> DivInt  << OpFormat.read23x
-                    | 0x94uy -> RemInt  << OpFormat.read23x
-                    | 0x95uy -> AndInt  << OpFormat.read23x
-                    | 0x96uy -> OrInt   << OpFormat.read23x
-                    | 0x97uy -> XorInt  << OpFormat.read23x
-                    | 0x98uy -> ShlInt  << OpFormat.read23x
-                    | 0x99uy -> ShrInt  << OpFormat.read23x
-                    | 0x9Auy -> UshrInt << OpFormat.read23x
-                    | 0x9Buy -> AddLong  << OpFormat.read23x
-                    | 0x9Cuy -> SubLong  << OpFormat.read23x
-                    | 0x9Duy -> MulLong  << OpFormat.read23x
-                    | 0x9Euy -> DivLong  << OpFormat.read23x
-                    | 0x9Fuy -> RemLong  << OpFormat.read23x
-                    | 0xA0uy -> AndLong  << OpFormat.read23x
-                    | 0xA1uy -> OrLong   << OpFormat.read23x
-                    | 0xA2uy -> XorLong  << OpFormat.read23x
-                    | 0xA3uy -> ShlLong  << OpFormat.read23x
-                    | 0xA4uy -> ShrLong  << OpFormat.read23x
-                    | 0xA5uy -> UshrLong << OpFormat.read23x
-                    | 0xA6uy -> AddFloat << OpFormat.read23x
-                    | 0xA7uy -> SubFloat << OpFormat.read23x
-                    | 0xA8uy -> MulFloat << OpFormat.read23x
-                    | 0xA9uy -> DivFloat << OpFormat.read23x
-                    | 0xAAuy -> RemFloat << OpFormat.read23x
-                    | 0xABuy -> AddDouble << OpFormat.read23x
-                    | 0xACuy -> SubDouble << OpFormat.read23x
-                    | 0xADuy -> MulDouble << OpFormat.read23x
-                    | 0xAEuy -> DivDouble << OpFormat.read23x
-                    | 0xAFuy -> RemDouble << OpFormat.read23x
+                    | 0x90uy -> curry Add (CoreInteger IntegerInt) << OpFormat.read23x
+                    | 0x91uy -> curry Sub (CoreInteger IntegerInt) << OpFormat.read23x
+                    | 0x92uy -> curry Mul (CoreInteger IntegerInt) << OpFormat.read23x
+                    | 0x93uy -> curry Div (CoreInteger IntegerInt) << OpFormat.read23x
+                    | 0x94uy -> curry Rem (CoreInteger IntegerInt) << OpFormat.read23x
+                    | 0x95uy -> curry And  IntegerInt << OpFormat.read23x
+                    | 0x96uy -> curry Or   IntegerInt << OpFormat.read23x
+                    | 0x97uy -> curry Xor  IntegerInt << OpFormat.read23x
+                    | 0x98uy -> curry Shl  IntegerInt << OpFormat.read23x
+                    | 0x99uy -> curry Shr  IntegerInt << OpFormat.read23x
+                    | 0x9Auy -> curry Ushr IntegerInt << OpFormat.read23x
+                    | 0x9Buy -> curry Add (CoreInteger IntegerLong) << OpFormat.read23x
+                    | 0x9Cuy -> curry Sub (CoreInteger IntegerLong) << OpFormat.read23x
+                    | 0x9Duy -> curry Mul (CoreInteger IntegerLong) << OpFormat.read23x
+                    | 0x9Euy -> curry Div (CoreInteger IntegerLong) << OpFormat.read23x
+                    | 0x9Fuy -> curry Rem (CoreInteger IntegerLong) << OpFormat.read23x
+                    | 0xA0uy -> curry And  IntegerLong << OpFormat.read23x
+                    | 0xA1uy -> curry Or   IntegerLong << OpFormat.read23x
+                    | 0xA2uy -> curry Xor  IntegerLong << OpFormat.read23x
+                    | 0xA3uy -> curry Shl  IntegerLong << OpFormat.read23x
+                    | 0xA4uy -> curry Shr  IntegerLong << OpFormat.read23x
+                    | 0xA5uy -> curry Ushr IntegerLong << OpFormat.read23x
+                    | 0xA6uy -> curry Add (CoreFloating FloatingFloat) << OpFormat.read23x
+                    | 0xA7uy -> curry Sub (CoreFloating FloatingFloat) << OpFormat.read23x
+                    | 0xA8uy -> curry Mul (CoreFloating FloatingFloat) << OpFormat.read23x
+                    | 0xA9uy -> curry Div (CoreFloating FloatingFloat) << OpFormat.read23x
+                    | 0xAAuy -> curry Rem (CoreFloating FloatingFloat) << OpFormat.read23x
+                    | 0xABuy -> curry Add (CoreFloating FloatingDouble) << OpFormat.read23x
+                    | 0xACuy -> curry Sub (CoreFloating FloatingDouble) << OpFormat.read23x
+                    | 0xADuy -> curry Mul (CoreFloating FloatingDouble) << OpFormat.read23x
+                    | 0xAEuy -> curry Div (CoreFloating FloatingDouble) << OpFormat.read23x
+                    | 0xAFuy -> curry Rem (CoreFloating FloatingDouble) << OpFormat.read23x
 
-                    | 0xB0uy -> AddInt  << convert2addr << OpFormat.read12x
-                    | 0xB1uy -> SubInt  << convert2addr << OpFormat.read12x
-                    | 0xB2uy -> MulInt  << convert2addr << OpFormat.read12x
-                    | 0xB3uy -> DivInt  << convert2addr << OpFormat.read12x
-                    | 0xB4uy -> RemInt  << convert2addr << OpFormat.read12x
-                    | 0xB5uy -> AndInt  << convert2addr << OpFormat.read12x
-                    | 0xB6uy -> OrInt   << convert2addr << OpFormat.read12x
-                    | 0xB7uy -> XorInt  << convert2addr << OpFormat.read12x
-                    | 0xB8uy -> ShlInt  << convert2addr << OpFormat.read12x
-                    | 0xB9uy -> ShrInt  << convert2addr << OpFormat.read12x
-                    | 0xBAuy -> UshrInt << convert2addr << OpFormat.read12x
-                    | 0xBBuy -> AddLong  << convert2addr << OpFormat.read12x
-                    | 0xBCuy -> SubLong  << convert2addr << OpFormat.read12x
-                    | 0xBDuy -> MulLong  << convert2addr << OpFormat.read12x
-                    | 0xBEuy -> DivLong  << convert2addr << OpFormat.read12x
-                    | 0xBFuy -> RemLong  << convert2addr << OpFormat.read12x
-                    | 0xC0uy -> AndLong  << convert2addr << OpFormat.read12x
-                    | 0xC1uy -> OrLong   << convert2addr << OpFormat.read12x
-                    | 0xC2uy -> XorLong  << convert2addr << OpFormat.read12x
-                    | 0xC3uy -> ShlLong  << convert2addr << OpFormat.read12x
-                    | 0xC4uy -> ShrLong  << convert2addr << OpFormat.read12x
-                    | 0xC5uy -> UshrLong << convert2addr << OpFormat.read12x
-                    | 0xC6uy -> AddFloat << convert2addr << OpFormat.read12x
-                    | 0xC7uy -> SubFloat << convert2addr << OpFormat.read12x
-                    | 0xC8uy -> MulFloat << convert2addr << OpFormat.read12x
-                    | 0xC9uy -> DivFloat << convert2addr << OpFormat.read12x
-                    | 0xCAuy -> RemFloat << convert2addr << OpFormat.read12x
-                    | 0xCBuy -> AddDouble << convert2addr << OpFormat.read12x
-                    | 0xCCuy -> SubDouble << convert2addr << OpFormat.read12x
-                    | 0xCDuy -> MulDouble << convert2addr << OpFormat.read12x
-                    | 0xCEuy -> DivDouble << convert2addr << OpFormat.read12x
-                    | 0xCFuy -> RemDouble << convert2addr << OpFormat.read12x
+                    | 0xB0uy -> curry Add (CoreInteger IntegerInt) << convert2addr << OpFormat.read12x
+                    | 0xB1uy -> curry Sub (CoreInteger IntegerInt) << convert2addr << OpFormat.read12x
+                    | 0xB2uy -> curry Mul (CoreInteger IntegerInt) << convert2addr << OpFormat.read12x
+                    | 0xB3uy -> curry Div (CoreInteger IntegerInt) << convert2addr << OpFormat.read12x
+                    | 0xB4uy -> curry Rem (CoreInteger IntegerInt) << convert2addr << OpFormat.read12x
+                    | 0xB5uy -> curry And  IntegerInt << convert2addr << OpFormat.read12x
+                    | 0xB6uy -> curry Or   IntegerInt << convert2addr << OpFormat.read12x
+                    | 0xB7uy -> curry Xor  IntegerInt << convert2addr << OpFormat.read12x
+                    | 0xB8uy -> curry Shl  IntegerInt << convert2addr << OpFormat.read12x
+                    | 0xB9uy -> curry Shr  IntegerInt << convert2addr << OpFormat.read12x
+                    | 0xBAuy -> curry Ushr IntegerInt << convert2addr << OpFormat.read12x
+                    | 0xBBuy -> curry Add (CoreInteger IntegerLong) << convert2addr << OpFormat.read12x
+                    | 0xBCuy -> curry Sub (CoreInteger IntegerLong) << convert2addr << OpFormat.read12x
+                    | 0xBDuy -> curry Mul (CoreInteger IntegerLong) << convert2addr << OpFormat.read12x
+                    | 0xBEuy -> curry Div (CoreInteger IntegerLong) << convert2addr << OpFormat.read12x
+                    | 0xBFuy -> curry Rem (CoreInteger IntegerLong) << convert2addr << OpFormat.read12x
+                    | 0xC0uy -> curry And  IntegerLong << convert2addr << OpFormat.read12x
+                    | 0xC1uy -> curry Or   IntegerLong << convert2addr << OpFormat.read12x
+                    | 0xC2uy -> curry Xor  IntegerLong << convert2addr << OpFormat.read12x
+                    | 0xC3uy -> curry Shl  IntegerLong << convert2addr << OpFormat.read12x
+                    | 0xC4uy -> curry Shr  IntegerLong << convert2addr << OpFormat.read12x
+                    | 0xC5uy -> curry Ushr IntegerLong << convert2addr << OpFormat.read12x
+                    | 0xC6uy -> curry Add (CoreFloating FloatingFloat) << convert2addr << OpFormat.read12x
+                    | 0xC7uy -> curry Sub (CoreFloating FloatingFloat) << convert2addr << OpFormat.read12x
+                    | 0xC8uy -> curry Mul (CoreFloating FloatingFloat) << convert2addr << OpFormat.read12x
+                    | 0xC9uy -> curry Div (CoreFloating FloatingFloat) << convert2addr << OpFormat.read12x
+                    | 0xCAuy -> curry Rem (CoreFloating FloatingFloat) << convert2addr << OpFormat.read12x
+                    | 0xCBuy -> curry Add (CoreFloating FloatingDouble) << convert2addr << OpFormat.read12x
+                    | 0xCCuy -> curry Sub (CoreFloating FloatingDouble) << convert2addr << OpFormat.read12x
+                    | 0xCDuy -> curry Mul (CoreFloating FloatingDouble) << convert2addr << OpFormat.read12x
+                    | 0xCEuy -> curry Div (CoreFloating FloatingDouble) << convert2addr << OpFormat.read12x
+                    | 0xCFuy -> curry Rem (CoreFloating FloatingDouble) << convert2addr << OpFormat.read12x
 
                     | 0xD0uy -> AddIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22s
                     | 0xD1uy -> RsubIntLit << Arrows.thirdOf3 int32 << OpFormat.read22s
@@ -590,7 +591,7 @@ module DexLoader =
                     | 0xDFuy -> XorIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
                     | 0xE0uy -> ShlIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
                     | 0xE1uy -> ShrIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
-                    | 0xE2uy -> UshrIntLit  << Arrows.thirdOf3 int32 << OpFormat.read22b
+                    | 0xE2uy -> UshrIntLit << Arrows.thirdOf3 int32 << OpFormat.read22b
 
                     | _      -> failwith <| "Instruction not implemented " + op.ToString ()
                 ) stream
