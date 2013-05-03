@@ -305,7 +305,7 @@ module DexLoader =
                 //| 0x1Cuy -> StaticArray <| DexFile.Read_encoded_array stream dexf
                 | 0x1Cuy -> failwith "Static arrays are not supported" //#TODO #17
                 | 0x1Duy -> failwith "Annotations are not supported" //TODO #5
-                | 0x1Euy -> JavaScript.Undefined
+                | 0x1Euy -> StaticReg <| Store.storeInt 0
                 | 0x1Fuy -> StaticReg << Store.storeInt << int32 <| value_arg
                 | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()
 
