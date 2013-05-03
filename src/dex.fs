@@ -36,6 +36,10 @@ module Dex =
         let floatToInt (i : float32) : int32 = floatToDouble i |> doubleToInt
         let floatToLong(i : float32) : GLong = floatToDouble i |> doubleToLong
 
+    type StaticValue = | StaticReg of RegValue
+                       | StaticString of string
+                       | StaticArray of StaticValue array
+
     type Bias = | LtBias | GtBias
     type Test = | Eq | Ne | Lt | Ge | Gt | Le
     type InvokeKind = | InvokeVirtual | InvokeSuper | InvokeDirect | InvokeStatic | InvokeInterface
@@ -63,15 +67,15 @@ module Dex =
                               * (* insns *) Instruction array
     and
      [<JavaScript>]
-     Class = Class of Type * uint32 * Type option * Type array * ClassImpl option
+     Class = Class of Type * uint32 * Type option * Type array * ClassImpl option * StaticValue array
      //TODO #5 (annotations)
      //TODO #2 (static_values)
     and
      [<JavaScript>]
-     ClassImpl = ClassImpl of dumbdict<Field, uint32> * dumbdict<Field, uint32>
-                              (* static *)                (* instane *)
+     ClassImpl = ClassImpl of (Field * uint32) array * dumbdict<Field, uint32> // order matter for static init
+                              (* static *)             (* instance *)
                             * dumbdict<Method, uint32 * MethodImpl option> * dumbdict<Method, uint32 * MethodImpl option>
-                              (* direct *)                                     (* virtual *)
+                              (* direct *)                                   (* virtual *)
     and
      [<JavaScript>]
      Instruction =

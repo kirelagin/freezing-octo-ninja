@@ -117,7 +117,7 @@ module ThreadWorker =
     [<JavaScript>]
     let rec resolveMethod (t : Dex.Type) (meth : Dex.Method) (cont : Dex.Type * Dex.MethodImpl -> unit) =
         getClass t <| fun cls ->
-            let (Class (_, _, super, _, impl)) = cls
+            let (Class (_, _, super, _, impl, _)) = cls
             match impl with
             | None -> failwith "Class without class_data"
             | Some (ClassImpl (_, _, _, virt)) ->
@@ -152,6 +152,17 @@ module ThreadWorker =
                                  | None -> failwith "Can't 'move-result', no result"
         member this.Start (dtype : Dex.Type, meth : Dex.MethodImpl) (args : RegValue array) = this.ExecuteMethod (dtype, meth) args this.Finish
         member this.Finish () = ()
+
+        member this.CreateString (s : string) (cont : dref -> unit) =
+            createArray (s.Length, Dex.Type "[C") (fun aref ->
+                fillArray (aref, Array.map Store.storeInt << String.toIntArray <| s) (fun () ->
+                    let strtype = Dex.Type "Ljava/lang/String;"
+                    createInstance strtype (fun str ->
+                        let proto = Dex.Proto ("VIIL", Dex.Type "V", [| Dex.Type "I"; Dex.Type "I"; Dex.Type "[C" |])
+                        let meth = Dex.Method (strtype, proto, "<init>")
+                        getMethodImpl meth true (fun m ->
+                            this.ExecuteMethod (strtype, m) [| RegRef str; Store.storeInt 0; Store.storeInt s.Length; RegRef aref|] (fun () -> cont str)))))
+
     and 
      [<JavaScript>]
         ThreadFrame (thread : Thread, thisclass : Type, insns : Instruction array, registers_size : int, args : RegValue array) =
@@ -184,15 +195,7 @@ module ThreadWorker =
                 | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
                 | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v); next ()
                 | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16)); next ()
-                | ConstString (r, s) -> createArray (s.Length, Dex.Type "[C") (fun aref ->
-                                            fillArray (aref, Array.map Store.storeInt << String.toIntArray <| s) (fun () ->
-                                                let strtype = Dex.Type "Ljava/lang/String;"
-                                                createInstance strtype (fun str ->
-                                                    this.SetReg (r, RegRef str)
-                                                    let proto = Dex.Proto ("VIIL", Dex.Type "V", [| Dex.Type "I"; Dex.Type "I"; Dex.Type "[C" |])
-                                                    let meth = Dex.Method (strtype, proto, "<init>")
-                                                    getMethodImpl meth true (fun m ->
-                                                        thread.ExecuteMethod (strtype, m) [| RegRef str; Store.storeInt 0; Store.storeInt s.Length; RegRef aref|] next))))
+                | ConstString (r, s) -> thread.CreateString s (fun str -> this.SetReg (r, RegRef str))
                 //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
 
                 //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message
@@ -303,7 +306,7 @@ module ThreadWorker =
                         match this.GetReg a1 with
                         | RegRef r ->
                             getObjectType r <| fun t ->
-                                getClass t <| fun (Class (_, _, s, _, _)) ->
+                                getClass t <| fun (Class (_, _, s, _, _, _)) ->
                                     match s with
                                     | Some supert -> resolveMethod supert meth (fun x -> thread.ExecuteMethod x args next)
                                     | None -> failwith "invoke-supert on class that doesn't have a super"

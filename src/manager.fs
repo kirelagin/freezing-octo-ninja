@@ -19,7 +19,7 @@ module Manager =
 
     [<JavaScript>]
     let registerClass (cls : Dex.Class) =
-        let (Class (dtype, _, _, _, _)) = cls
+        let (Class (dtype, _, _, _, _, _)) = cls
         library.[dtype] <- JustLoaded cls
 
     [<JavaScript>]
@@ -38,13 +38,26 @@ module Manager =
             let d = Dictionary ()
             library.[t] <- Initialised (c, d)
             match c with
-            | Class (_, _, _, _, Some (ClassImpl (fs, _, _, _))) ->
-                Array.iter (fun f -> d.[f] <- Runtime.defaultValue f) <| Dumbdict.keys fs
-                let clinit = Dex.Method (t, Proto ("V", Type "V", [| |]), "<clinit>")
-                match Runtime.getMethodImpl c true clinit with
-                | None -> cont <| (c, d)
-                | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (t, impl) [| |] (fun () -> cont (c, d)) 
-            | Class (_, _, _, _, None) -> cont (c, d)
+            | Class (_, _, _, _, Some (ClassImpl (fs, _, _, _)), staticInit) ->
+                let staticValues : RegValue array = [| |]
+                let rec valuesFromStatic (i : int) (cont : unit -> unit) =
+                    if i >= staticInit.Length then
+                        cont ()
+                    else
+                        let st = staticInit.[i]
+                        match st with
+                        | StaticReg r -> Array.push staticValues r; valuesFromStatic (i+1) cont
+                        | StaticString s -> (new ThreadWorker.Thread ()).CreateString s (fun str -> Array.push staticValues (RegRef str); valuesFromStatic (i+1) cont)
+                        | StaticArray _ -> failwith "Static arrays are not supported" //TODO #17
+
+                valuesFromStatic 0 <| fun () ->
+                    Array.iteri (fun i -> fun v -> d.[fst <| fs.[i]] <- v) staticValues
+                    Array.iter (fun f -> d.[f] <- Runtime.defaultValue f) <| Array.sub (Dumbdict.keys fs) (staticValues.Length) (fs.Length - staticValues.Length)
+                    let clinit = Dex.Method (t, Proto ("V", Type "V", [| |]), "<clinit>")
+                    match Runtime.getMethodImpl c true clinit with
+                    | None -> cont <| (c, d)
+                    | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (t, impl) [| |] (fun () -> cont (c, d)) 
+            | Class (_, _, _, _, None, _) -> cont (c, d)
         | None -> failwith "Type without associated class!"
 
     [<JavaScript>]
@@ -91,7 +104,7 @@ module Manager =
             createInstance dtype (ProvideInstance >> cont)
         | GetObjectType refr ->
             match heap.[refr] with
-            | VMInstance (Class (t, _, _, _, _), _) ->
+            | VMInstance (Class (t, _, _, _, _, _), _) ->
                 cont << ProvideType <| t
             | _ -> failwith "Instance expected"
         | CreateArray (size, dtype) ->

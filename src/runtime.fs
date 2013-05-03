@@ -6,7 +6,7 @@ open IntelliFactory.WebSharper
 module Runtime =
     open Coretypes    
 
-    let getMethodImpl (Dex.Class (_, _, _, _, impl)) (direct : bool) (meth : Dex.Method) =
+    let getMethodImpl (Dex.Class (_, _, _, _, impl, _)) (direct : bool) (meth : Dex.Method) =
         match impl with
         | None -> None
         | Some (Dex.ClassImpl (_, _, dir, virt)) ->

@@ -265,7 +265,7 @@ module DexLoader =
                 let c = Class (dexf.Types.[int class_idx], access_flags,
                                   (if superclass_idx = NO_INDEX then None else Some dexf.Types.[int32 superclass_idx]),
                                   Array.map (fun i -> dexf.Types.[int32 i]) <| DexFile.Read_type_list stream interfaces_off,
-                                  class_impl)
+                                  class_impl, static_values)
                 Array.push dexf.Classes c
                 registerClass c
                 stream.Seek next_class_off |> ignore
@@ -290,22 +290,23 @@ module DexLoader =
             let value_arg = (value_tag >>> 5) &&& 0x07uy
             let value_type = value_tag &&& 0x1Fuy
             match value_type with
-                | 0x00uy -> Store.storeInt << int32 <| stream.GetByte ()
-                | 0x02uy -> Store.storeInt << int32 <| stream.GetInt16Var (int value_arg + 1)
-                | 0x03uy -> Store.storeInt << int32 <| stream.GetUInt16Var (int value_arg + 1)
-                | 0x04uy -> Store.storeInt << int32 <| stream.GetInt32Var (int value_arg + 1)
-                | 0x06uy -> Store.storeLong <| stream.GetInt64Var (int value_arg + 1)
-                | 0x10uy -> Store.storeFloat <| stream.GetFloatVar (int value_arg + 1)
-                | 0x11uy -> Store.storeDouble <| stream.GetDoubleVar (int value_arg + 1)
-                //| 0x17uy -> RegAny << As<obj> <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                //| 0x18uy -> RegAny << As<obj> <| dexf.Types.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                //| 0x19uy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                //| 0x1Auy -> RegAny << As<obj> <| dexf.Methods.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                //| 0x1Buy -> RegAny << As<obj> <| dexf.Fields.[int <| stream.GetUInt32Var (int value_arg + 1)]
-                //| 0x1Cuy -> RegAny << As<obj> <| DexFile.Read_encoded_array stream dexf
+                | 0x00uy -> StaticReg << Store.storeInt << int32 <| stream.GetByte ()
+                | 0x02uy -> StaticReg << Store.storeInt << int32 <| stream.GetInt16Var (int value_arg + 1)
+                | 0x03uy -> StaticReg << Store.storeInt << int32 <| stream.GetUInt16Var (int value_arg + 1)
+                | 0x04uy -> StaticReg << Store.storeInt << int32 <| stream.GetInt32Var (int value_arg + 1)
+                | 0x06uy -> StaticReg << Store.storeLong <| stream.GetInt64Var (int value_arg + 1)
+                | 0x10uy -> StaticReg << Store.storeFloat <| stream.GetFloatVar (int value_arg + 1)
+                | 0x11uy -> StaticReg << Store.storeDouble <| stream.GetDoubleVar (int value_arg + 1)
+                | 0x17uy -> StaticString <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
+                | 0x18uy -> ignore <| stream.GetUInt32Var (int value_arg + 1); JavaScript.Undefined
+                | 0x19uy -> ignore <| stream.GetUInt32Var (int value_arg + 1); JavaScript.Undefined
+                | 0x1Auy -> ignore <| stream.GetUInt32Var (int value_arg + 1); JavaScript.Undefined
+                | 0x1Buy -> ignore <| stream.GetUInt32Var (int value_arg + 1); JavaScript.Undefined
+                //| 0x1Cuy -> StaticArray <| DexFile.Read_encoded_array stream dexf
+                | 0x1Cuy -> failwith "Static arrays are not supported" //#TODO #17
                 | 0x1Duy -> failwith "Annotations are not supported" //TODO #5
                 | 0x1Euy -> JavaScript.Undefined
-                | 0x1Fuy -> Store.storeInt << int32 <| value_arg
+                | 0x1Fuy -> StaticReg << Store.storeInt << int32 <| value_arg
                 | _ -> failwith <| "Unsupported encoded_value type " + value_type.ToString ()
 
         static member private Read_instructions stream size dexf =
