@@ -26,7 +26,7 @@ ALL_ASSEMBLIES := $(foreach kind,DOTNET FSHARP WEBSHARPER,$(ASSEMBLIES_$(kind):%
 build : build/output.js build/run.html build/manager.js build/thread.js build/gLong.js build/WebSharper/
 
 build/all.dll : $(INPUT:%=src/%.fs)
-	fsharpc --target:library --noframework $(ALL_ASSEMBLIES:%=-r:%) -o:$@ $^
+	TERM=xterm fsharpc --target:library --noframework $(ALL_ASSEMBLIES:%=-r:%) -o:$@ $^
 
 build/output.js : build/all.dll
 	mono $(WEBSHARPER_BIN) $(ALL_ASSEMBLIES:%=-r %) -js $@ $< /tmp/useless.dll
