@@ -14,7 +14,7 @@
         IntelliFactory.Runtime.Define(Dalvik, {
             ThreadWorker: {
                 requestResource: function(r, cont) {
-                                    Dalvik.Manager.processRequest(r, cont);
+                                    setTimeout(function() { Dalvik.Manager.processRequest(r, cont); }, 0);
                                  }
             }
         });
