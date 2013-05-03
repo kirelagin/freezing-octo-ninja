@@ -131,6 +131,9 @@ module ThreadWorker =
                     | Some t -> resolveMethod t meth cont
 
 
+    // Native methods library
+    let nativelib : Dictionary<Dex.Method, RegValue array -> RegValue option> = Dictionary ()
+
     [<JavaScript>]
     type Thread () =
         let frames : ThreadFrame array = [| |]
@@ -299,7 +302,8 @@ module ThreadWorker =
                             getObjectType r <| fun t ->
                                 resolveMethod t meth (fun x -> thread.ExecuteMethod x args next)
                         | _ -> failwith "invoke-interface on non-object"
-                    | InvokeDirect ->
+                    | InvokeDirect
+                    | InvokeStatic ->
                         let (Method (dtype, _, _)) = meth
                         getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, m) args next)
                     | InvokeSuper ->

@@ -18,7 +18,7 @@ ASSEMBLIES_FSHARP := FSharp.Core
 ASSEMBLIES_WEBSHARPER := IntelliFactory.Formlet IntelliFactory.Html IntelliFactory.JavaScript IntelliFactory.Reactive IntelliFactory.WebSharper.Collections IntelliFactory.WebSharper.Control IntelliFactory.WebSharper.Core IntelliFactory.WebSharper IntelliFactory.WebSharper.Dom IntelliFactory.WebSharper.Ecma IntelliFactory.WebSharper.Formlet IntelliFactory.WebSharper.Html IntelliFactory.WebSharper.Html5 IntelliFactory.WebSharper.JQuery IntelliFactory.WebSharper.Sitelets IntelliFactory.WebSharper.Testing IntelliFactory.WebSharper.Web IntelliFactory.Xml
 
 # Order matters!
-INPUT := jsutil fsutil filearray coretypes dex dexloader runtime shared interpret manager vm
+INPUT := jsutil fsutil filearray coretypes dex dexloader runtime shared interpret manager native vm
 
 ALL_ASSEMBLIES := $(foreach kind,DOTNET FSHARP WEBSHARPER,$(ASSEMBLIES_$(kind):%=$(ASSEMBLIES_DIR_$(kind))/%.dll))
 
