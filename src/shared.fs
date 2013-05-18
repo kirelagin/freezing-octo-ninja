@@ -19,6 +19,8 @@ module Shared =
         | GetInstanceField of dref * Dex.Field
         | PutInstanceField of dref * Dex.Field * RegValue
 
+        | ArrayCopy of dref * int * dref * int * int
+
     [<JavaScript>]
     type ResourceReply =
         | ProvideType of Dex.Type
