@@ -39,7 +39,7 @@ module Coretypes =
                                         | Reg32 i -> i
                                         | _ -> failwith "Trying to load an int from non-32-bit value"
 
-        let storeInt (i : int32) = Reg32 i
+        let storeInt (i : int32) = Reg32 (int32 i)
 
         let loadLong (v : RegValue) = match v with
                                         | Reg64 i -> i
@@ -76,3 +76,23 @@ module Coretypes =
 
     //    let floatOps = { opLoad = Store.loadFloat; opStore = Store.storeFloat; opAdd = (+); opSub = (-); opMul = (*); opDiv = (/); opRem = (%) }
     //    let doubleOps = { opLoad = Store.loadDouble; opStore = Store.storeDouble; opAdd = (+); opSub = (-); opMul = (*); opDiv = (/); opRem = (%) }
+
+    [<JavaScript>]
+    module Convert =
+        let intToLong (i : int32) : GLong = GLong.FromInt i
+        let intToFloat (i : int32) : float32 = (new Float32Array([| float32 i |])).Get(0uL)
+        let intToDouble (i : int32) : float64 = float64 i
+
+        let doubleToInt (i : float64) : int32 = if i > float64 System.Int32.MaxValue then System.Int32.MaxValue
+                                                elif i < float64 System.Int32.MinValue then System.Int32.MinValue
+                                                else int32 i
+        let doubleToLong (i : float64) : GLong = if i = infinity then GLong.MAX_VALUE elif i = -infinity then GLong.MIN_VALUE else GLong.FromNumber i
+        let doubleToFloat (i : float64) : float32 = (new Float32Array([| float32 i |])).Get(0uL) //TODO #11
+
+        let longToInt (i : GLong) : int32 = i.ToInt()
+        let longToDouble (i : GLong) : float64 = i.ToNumber()
+        let longToFloat (i : GLong) : float32 = longToDouble i |> doubleToFloat
+
+        let floatToDouble (i : float32) : float64 = float64 i
+        let floatToInt (i : float32) : int32 = floatToDouble i |> doubleToInt
+        let floatToLong(i : float32) : GLong = floatToDouble i |> doubleToLong

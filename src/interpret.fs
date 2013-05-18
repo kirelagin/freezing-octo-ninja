@@ -335,9 +335,31 @@ module ThreadWorker =
                     this.SetReg(d, newval)
                     next ()
 
-                // ops missing…
-
-                | IntToSmall (_, (d, s)) -> this.SetReg (d, this.GetReg s); next ()
+                | Convert ((t1, t2), (d, s)) ->
+                    (match (t1, t2) with
+                                     | (CoreInteger IntegerInt, CoreInteger IntegerLong) -> Store.storeLong << Convert.intToLong << Store.loadInt
+                                     | (CoreInteger IntegerInt, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.intToFloat << Store.loadInt
+                                     | (CoreInteger IntegerInt, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.intToDouble << Store.loadInt
+                                     | (CoreInteger IntegerLong, CoreInteger IntegerInt) -> Store.storeInt << Convert.longToInt << Store.loadLong
+                                     | (CoreInteger IntegerLong, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.longToFloat << Store.loadLong
+                                     | (CoreInteger IntegerLong, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.longToDouble << Store.loadLong
+                                     | (CoreFloating FloatingFloat, CoreInteger IntegerInt) -> Store.storeInt << Convert.floatToInt << Store.loadFloat
+                                     | (CoreFloating FloatingFloat, CoreInteger IntegerLong) -> Store.storeLong << Convert.floatToLong << Store.loadFloat
+                                     | (CoreFloating FloatingFloat, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.floatToDouble << Store.loadFloat
+                                     | (CoreFloating FloatingDouble, CoreInteger IntegerInt) -> Store.storeInt << Convert.doubleToInt << Store.loadDouble
+                                     | (CoreFloating FloatingDouble, CoreInteger IntegerLong) -> Store.storeLong << Convert.doubleToLong << Store.loadDouble
+                                     | (CoreFloating FloatingDouble, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.doubleToFloat << Store.loadDouble
+                                     | _ -> failwith "Invalid convertion"
+                    ) (this.GetReg s) |> curry this.SetReg d
+                    next ()
+                | IntToSmall (t, (d, s)) ->
+                    let i = Store.loadInt <| this.GetReg s
+                    let r = match t with
+                            | SmallIntByte -> (i <<< 24) >>> 24
+                            | SmallIntChar -> i &&& 0xFFFF
+                            | SmallIntShort -> (i <<< 16) >>> 16
+                    this.SetReg (d, Store.storeInt r)
+                    next ()
 
                 | Add (t, (d, a, b)) ->
                     let (v1, v2) = (this.GetReg a, this.GetReg b)
