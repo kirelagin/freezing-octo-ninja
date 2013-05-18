@@ -41,10 +41,11 @@ module Dex =
      Method = Method of Type * Proto * string
     and
      [<JavaScript>]
-     MethodImpl = MethodImpl of (* registers_size *) uint16
-                              * (* ins_size *) uint16
-                              * (* outs_size *) uint16
-                              * (* insns *) Instruction array
+     MethodImpl = | MethodImpl of (* registers_size *) uint16
+                                * (* ins_size *) uint16
+                                * (* outs_size *) uint16
+                                * (* insns *) Instruction array
+                  | NativeMethod
     and
      [<JavaScript>]
      Class = Class of Type * uint32 * Type option * Type array * ClassImpl option * StaticValue array

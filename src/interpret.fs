@@ -115,7 +115,7 @@ module ThreadWorker =
 
 
     [<JavaScript>]
-    let rec resolveMethod (t : Dex.Type) (meth : Dex.Method) (cont : Dex.Type * Dex.MethodImpl -> unit) =
+    let rec resolveMethod (t : Dex.Type) (meth : Dex.Method) (cont : Dex.Type * Dex.Method * Dex.MethodImpl -> unit) =
         getClass t <| fun cls ->
             let (Class (_, _, super, _, impl, _)) = cls
             match impl with
@@ -123,7 +123,7 @@ module ThreadWorker =
             | Some (ClassImpl (_, _, _, virt)) ->
                 let m = Dumbdict.tryGetWith (fun (Method (_, p1, n1)) (Method (_, p2, n2)) -> n1 = n2 && p1 = p2) virt meth
                 match m with
-                | Some (_, Some method_impl) -> cont (t, method_impl)
+                | Some (_, Some method_impl) -> cont (t, meth, method_impl)
                 | Some (_, None) -> failwith "Method not implemented" //TODO #10 throw IncompatibleClassChangeError
                 | None ->
                     match super with
@@ -132,18 +132,21 @@ module ThreadWorker =
 
 
     // Native methods library
-    let nativelib : Dictionary<Dex.Method, RegValue array -> RegValue option> = Dictionary ()
+    [<JavaScript>]
+    let nativelib : Dictionary<Dex.Method, (RegValue array * (RegValue option -> unit) -> unit)> = Dictionary ()
 
     [<JavaScript>]
     type Thread () =
         let frames : ThreadFrame array = [| |]
         let mutable ret : RegValue option = None
-        member this.ExecuteMethod (mclass : Dex.Type, meth : Dex.MethodImpl) (args : RegValue array) (cont : unit -> unit) =
-            match meth with
+        member this.ExecuteMethod (mclass : Dex.Type, meth : Dex.Method, impl : Dex.MethodImpl) (args : RegValue array) (cont : unit -> unit) =
+            match impl with
             | MethodImpl (registers_size, ins_size, outs_size, insns) ->
                 let frame = new ThreadFrame (this, mclass, insns, int registers_size, args)
                 Array.push frames <| frame
                 frame.Interpret 0 cont
+            | NativeMethod ->
+                nativelib.[meth] (args, fun _ -> cont ())
         member this.Return (r : RegValue option) (cont : unit -> unit) =
             ret <- r
             Array.pop frames
@@ -153,7 +156,7 @@ module ThreadWorker =
                                     ret <- None
                                     r
                                  | None -> failwith "Can't 'move-result', no result"
-        member this.Start (dtype : Dex.Type, meth : Dex.MethodImpl) (args : RegValue array) = this.ExecuteMethod (dtype, meth) args this.Finish
+        member this.Start (dtype : Dex.Type, meth : Dex.Method, impl : Dex.MethodImpl) (args : RegValue array) = this.ExecuteMethod (dtype, meth, impl) args this.Finish
         member this.Finish () = ()
 
         member this.CreateString (s : string) (cont : dref -> unit) =
@@ -164,7 +167,7 @@ module ThreadWorker =
                         let proto = Dex.Proto ("VIIL", Dex.Type "V", [| Dex.Type "I"; Dex.Type "I"; Dex.Type "[C" |])
                         let meth = Dex.Method (strtype, proto, "<init>")
                         getMethodImpl meth true (fun m ->
-                            this.ExecuteMethod (strtype, m) [| RegRef str; Store.storeInt 0; Store.storeInt s.Length; RegRef aref|] (fun () -> cont str)))))
+                            this.ExecuteMethod (strtype, meth, m) [| RegRef str; Store.storeInt 0; Store.storeInt s.Length; RegRef aref|] (fun () -> cont str)))))
 
     and 
      [<JavaScript>]
@@ -305,7 +308,7 @@ module ThreadWorker =
                     | InvokeDirect
                     | InvokeStatic ->
                         let (Method (dtype, _, _)) = meth
-                        getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, m) args next)
+                        getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, meth, m) args next)
                     | InvokeSuper ->
                         match this.GetReg a1 with
                         | RegRef r ->
@@ -488,7 +491,7 @@ module ThreadWorker =
     let mutable thread = None
 
     [<JavaScript>]
-    let init ((dtype : Dex.Type, meth : Dex.MethodImpl),  args : RegValue array) =
+    let init ((dtype : Dex.Type, meth : Dex.Method, impl : Dex.MethodImpl),  args : RegValue array) =
         let t = new Thread ()
         thread <- Some t
-        t.Start (dtype, meth) args
+        t.Start (dtype, meth, impl) args

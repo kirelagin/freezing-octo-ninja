@@ -56,7 +56,7 @@ module Manager =
                     let clinit = Dex.Method (t, Proto ("V", Type "V", [| |]), "<clinit>")
                     match Runtime.getMethodImpl c true clinit with
                     | None -> cont <| (c, d)
-                    | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (t, impl) [| |] (fun () -> cont (c, d)) 
+                    | Some impl -> (new ThreadWorker.Thread ()).ExecuteMethod (t, clinit, impl) [| |] (fun () -> cont (c, d)) 
             | Class (_, _, _, _, None, _) -> cont (c, d)
         | None -> failwith "Type without associated class!"
 

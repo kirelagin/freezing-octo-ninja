@@ -90,6 +90,8 @@ module DexLoader =
     // FS0452, so it's here. TODO: move elsewhere.
     [<JavaScript>]
     let NO_INDEX = 0xFFFFFFFFu
+    [<JavaScript>]
+    let ACC_NATIVE = 0x100u
 
     [<JavaScript>]
     type DexFile [<JavaScript>] private () =
@@ -230,7 +232,10 @@ module DexLoader =
                                 method_idx <- method_idx + method_idx_diff
                                 let impl =
                                     if code_off = 0u then
-                                        None
+                                        if access_flags &&& ACC_NATIVE <> 0u then
+                                            Some NativeMethod
+                                        else
+                                            None
                                     else
                                         Some <|
                                             let old_off = stream.Seek(code_off)
