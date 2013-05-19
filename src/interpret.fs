@@ -142,7 +142,7 @@ module ThreadWorker =
         member this.ExecuteMethod (mclass : Dex.Type, meth : Dex.Method, impl : Dex.MethodImpl) (args : RegValue array) (cont : unit -> unit) =
             match impl with
             | MethodImpl (registers_size, ins_size, outs_size, insns) ->
-                let frame = new ThreadFrame (this, mclass, insns, int registers_size, args)
+                let frame = new ThreadFrame (this, meth, mclass, insns, int registers_size, args)
                 Array.push frames <| frame
                 frame.Interpret 0 cont
             | NativeMethod ->
@@ -171,7 +171,7 @@ module ThreadWorker =
 
     and 
      [<JavaScript>]
-        ThreadFrame (thread : Thread, thisclass : Type, insns : Instruction array, registers_size : int, args : RegValue array) =
+        ThreadFrame (thread : Thread, meth : Method, thisclass : Type, insns : Instruction array, registers_size : int, args : RegValue array) =
         let regs = Array.append (Array.create (registers_size - args.Length) (Store.storeInt 0)) args
 
         member this.Thread () = thread
