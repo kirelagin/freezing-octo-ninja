@@ -30,7 +30,7 @@ module ThreadWorker =
             requestResource (RequestClass dtype, fun r ->
                 match r with
                     | ProvideClass c ->
-                        cacheClasses.Add (dtype, c)
+                        cacheClasses.[dtype] <- c
                         cont c
                     | _ -> failwith <| "Unexpected reply. I need a Class but got a "  + r.ToString ())
 
