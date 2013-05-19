@@ -23,6 +23,8 @@ IntelliFactory.Runtime.Define(Dalvik, {
 
 IntelliFactory.Runtime.Start();
 
+Dalvik.Native.init();
+
 
 //self.onmessage = function(e) {
 //    manager = e.ports[0];

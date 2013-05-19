@@ -146,7 +146,7 @@ module ThreadWorker =
                 Array.push frames <| frame
                 frame.Interpret 0 cont
             | NativeMethod ->
-                nativelib.[meth] (args, fun _ -> cont ())
+                nativelib.[meth] (args, fun r -> ret <- r; cont ())
         member this.Return (r : RegValue option) (cont : unit -> unit) =
             ret <- r
             Array.pop frames

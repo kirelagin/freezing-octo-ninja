@@ -20,6 +20,7 @@ module Shared =
         | PutInstanceField of dref * Dex.Field * RegValue
 
         | ArrayCopy of dref * int * dref * int * int
+        | ConsoleLog of obj
 
     [<JavaScript>]
     type ResourceReply =

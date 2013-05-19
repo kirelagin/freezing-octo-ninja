@@ -67,6 +67,8 @@ module JsUtil =
         member this.ToInt () : int32 = X<_>
         [<Name "toNumber">]
         member this.ToNumber () : float64 = X<_>
+        [<Name "toString">]
+        override this.ToString () : string = X<_>
         [<Name "getHighBits">]
         member this.GetHighBits () : int32 = X<_>
         [<Name "getLowBits">]
@@ -103,3 +105,10 @@ module JsUtil =
         member this.ShiftRight (numBit : int32) : GLong  = X<_>
         [<Name "shiftRightUnsigned">]
         member this.ShiftRightUnsigned (numBit : int32) : GLong  = X<_>
+
+
+    [<Name [| "Date" |]>]
+    [<Stub>]
+    type Date () =
+        [<Name "getTime">]
+        member this.GetTime () : float64 = X<_>
