@@ -15,7 +15,7 @@ module DexLoader =
 
         let read12x (stream : FileArray.DexFileArray) : reg * reg =
             let ba = stream.GetByte ()
-            (reg << nibble <| ba, reg << nibble <| (ba >>> 4))
+            (reg << unibble <| ba, reg << unibble <| (ba >>> 4))
         let read11n (stream : FileArray.DexFileArray) : reg * nibble =
             let ba = stream.GetByte ()
             (reg << nibble <| ba, nibble <| (ba >>> 4))
