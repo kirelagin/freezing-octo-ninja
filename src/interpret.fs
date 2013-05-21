@@ -144,7 +144,7 @@ module ThreadWorker =
             | MethodImpl (registers_size, ins_size, outs_size, insns) ->
                 let frame = new ThreadFrame (this, meth, mclass, insns, int registers_size, args)
                 Array.push frames <| frame
-                frame.Interpret 0 cont
+                frame.Interpret cont
             | NativeMethod ->
                 nativelib.[meth] (args, fun r -> ret <- r; cont ())
         member this.Return (r : RegValue option) (cont : unit -> unit) =
@@ -173,319 +173,343 @@ module ThreadWorker =
      [<JavaScript>]
         ThreadFrame (thread : Thread, meth : Method, thisclass : Type, insns : Instruction array, registers_size : int, args : RegValue array) =
         let regs = Array.append (Array.create (registers_size - args.Length) (Store.storeInt 0)) args
+        let mutable ip = 0
 
         member this.Thread () = thread
         member this.GetReg (i : reg) = regs.[int i]
         member this.SetReg (i : reg, v : RegValue) = regs.[int i] <- v
     
-        member this.Interpret (i : int) (cont : unit -> unit) =
-            if int i >= insns.Length then cont () else
-            let goto t = this.Interpret t cont
-            let next () = goto (i + 1)
-            let ins = insns.[i]
-            match ins with
-                | Nop () -> next ()
+        member this.Interpret (cont : unit -> unit) =
+            let unwind = ref false
 
-                | Move (r1, r2) -> this.SetReg(r1, this.GetReg r2); next ()
-                | MoveResult r -> this.SetReg(r, thread.LastResult); next ()
-                //| MoveException //TODO #10
+            let goto t = ip <- t
+            let next () = goto (ip + 1)
+                          if !unwind then
+                              this.Interpret cont
+                          else
+                              () 
+            while not !unwind do
+                match insns.[ip] with
+                    | Nop () -> next ()
 
-                | ReturnVoid () -> thread.Return None cont
-                | Return r -> thread.Return (Some <| this.GetReg r) cont
+                    | Move (r1, r2) -> this.SetReg(r1, this.GetReg r2); next ()
+                    | MoveResult r -> this.SetReg(r, thread.LastResult); next ()
+                    //| MoveException //TODO #10
 
-                | Const4 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
-                | Const16 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
-                | Const (r, v) -> this.SetReg (r, Store.storeInt <| v); next ()
-                | ConstHigh16 (r, v) -> this.SetReg (r, Store.storeInt (int32 v <<< 16)); next ()
-                | ConstWide16 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt << int32 <| v); next ()
-                | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
-                | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v); next ()
-                | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16)); next ()
-                | ConstString (r, s) -> thread.CreateString s (fun str -> this.SetReg (r, RegRef str); next ())
-                //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
+                    | ReturnVoid () -> thread.Return None cont
+                    | Return r -> thread.Return (Some <| this.GetReg r) cont
 
-                //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message
-                //| MonitorExit r -> this.GetReg r // TODO: send monitor-enter message
+                    | Const4 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
+                    | Const16 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
+                    | Const (r, v) -> this.SetReg (r, Store.storeInt <| v); next ()
+                    | ConstHigh16 (r, v) -> this.SetReg (r, Store.storeInt (int32 v <<< 16)); next ()
+                    | ConstWide16 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt << int32 <| v); next ()
+                    | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
+                    | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v); next ()
+                    | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16)); next ()
+                    | ConstString (r, s) -> unwind := true; thread.CreateString s (fun str -> this.SetReg (r, RegRef str); next ())
+                    //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
 
-                // ops missing…
+                    //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message
+                    //| MonitorExit r -> this.GetReg r // TODO: send monitor-enter message
 
-                | ArrayLength (d, r) ->
-                    match this.GetReg r with
-                    | RegRef dref -> getArrayLength dref (fun l -> this.SetReg (d, l); next ())
-                    | _ -> failwith "array-length on non-object"
+                    // ops missing…
 
-                | NewInstance (r, t) -> createInstance t (fun dref ->
-                                                            this.SetReg (r, RegRef dref)
-                                                            next ())
+                    | ArrayLength (d, r) ->
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef dref -> getArrayLength dref (fun l -> this.SetReg (d, l); next ())
+                        | _ -> failwith "array-length on non-object"
 
-                | NewArray (d, s, t) -> createArray (Store.loadInt << this.GetReg <| s, t) (fun dref ->
-                                                                                                this.SetReg (d, RegRef dref)
-                                                                                                next ())
+                    | NewInstance (r, t) -> unwind := true
+                                            createInstance t (fun dref ->
+                                                                this.SetReg (r, RegRef dref)
+                                                                next ())
 
-                | FilledNewArray _ -> failwith "Not implemented"
-                | FilledNewArrayRange _ -> failwith "Not implemented"
+                    | NewArray (d, s, t) -> unwind := true
+                                            createArray (Store.loadInt << this.GetReg <| s, t) (fun dref ->
+                                                                                                    this.SetReg (d, RegRef dref)
+                                                                                                    next ())
 
-                | FillArrayData (r, vals) ->
-                    match this.GetReg r with
-                    | RegRef refr -> fillArray (refr, vals) next
-                    | _ -> failwith "Bad destination register"
+                    | FilledNewArray _ -> failwith "Not implemented"
+                    | FilledNewArrayRange _ -> failwith "Not implemented"
 
-                // ops missing…
+                    | FillArrayData (r, vals) ->
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef refr -> fillArray (refr, vals) next
+                        | _ -> failwith "Bad destination register"
 
-                | Goto offset -> match offset with
-                                 | AbsoluteIndex i -> goto i
-                                 | RelativeBytes _ -> failwith "Unresolved goto offset"
+                    // ops missing…
 
-                // ops missing…
+                    | Goto offset -> match offset with
+                                     | AbsoluteIndex i -> goto i
+                                     | RelativeBytes _ -> failwith "Unresolved goto offset"
+                    | Switch (r, cases) ->
+                        let i = Store.loadInt (this.GetReg r)
+                        match Dumbdict.tryGet cases i with
+                        | Some offset -> match offset with
+                                         | AbsoluteIndex i -> goto i
+                                         | RelativeBytes _ -> failwith "Unresolved switch offset"
+                        | None -> next ()
 
-                | If (kind, (a, b, offset)) ->
-                    let i = match offset with
-                            | AbsoluteIndex i -> i
-                            | RelativeBytes _ -> failwith "Unresolved offset"
-                    let va = Store.loadInt (this.GetReg a)
-                    let vb = Store.loadInt (this.GetReg b)
-                    let jump = match kind with
-                               | Eq -> va = vb
-                               | Ne -> va <> vb
-                               | Lt -> va < vb
-                               | Ge -> va >= vb
-                               | Gt -> va > vb
-                               | Le -> va <= vb
-                    if jump then goto i else next ()
+                    // ops missing…
 
-                | IfZ (kind, (a, offset)) ->
-                    let i = match offset with
-                            | AbsoluteIndex i -> i
-                            | RelativeBytes _ -> failwith "Unresolved offset"
-                    let jump = match this.GetReg a with
-                               | RegRef _ ->
-                                    match kind with
-                                    | Eq -> false
-                                    | Ne -> true
-                                    | _ -> failwith "Invalid comparison of reference value with zero"
-                               | _ ->
-                                    let va = Store.loadInt (this.GetReg a)
-                                    match kind with
-                                               | Eq -> va = 0
-                                               | Ne -> va <> 0
-                                               | Lt -> va < 0
-                                               | Ge -> va >= 0
-                                               | Gt -> va > 0
-                                               | Le -> va <= 0
-                    if jump then goto i else next ()
+                    | If (kind, (a, b, offset)) ->
+                        let i = match offset with
+                                | AbsoluteIndex i -> i
+                                | RelativeBytes _ -> failwith "Unresolved offset"
+                        let va = Store.loadInt (this.GetReg a)
+                        let vb = Store.loadInt (this.GetReg b)
+                        let jump = match kind with
+                                   | Eq -> va = vb
+                                   | Ne -> va <> vb
+                                   | Lt -> va < vb
+                                   | Ge -> va >= vb
+                                   | Gt -> va > vb
+                                   | Le -> va <= vb
+                        if jump then goto i else next ()
 
-                | Aget (d, r, i) ->
-                    match this.GetReg r with
-                    | RegRef refr -> arrayGet refr (Store.loadInt << this.GetReg <| i) (fun v -> this.SetReg (d, v); next ())
-                    | _ -> failwith "aget on non-object"
-                | Aput (s, r, i) ->
-                    match this.GetReg r with
-                    | RegRef refr -> arrayPut refr (Store.loadInt << this.GetReg <| i) (this.GetReg s) next
-                    | _ -> failwith "aput on non-object"
+                    | IfZ (kind, (a, offset)) ->
+                        let i = match offset with
+                                | AbsoluteIndex i -> i
+                                | RelativeBytes _ -> failwith "Unresolved offset"
+                        let jump = match this.GetReg a with
+                                   | RegRef _ ->
+                                        match kind with
+                                        | Eq -> false
+                                        | Ne -> true
+                                        | _ -> failwith "Invalid comparison of reference value with zero"
+                                   | _ ->
+                                        let va = Store.loadInt (this.GetReg a)
+                                        match kind with
+                                                   | Eq -> va = 0
+                                                   | Ne -> va <> 0
+                                                   | Lt -> va < 0
+                                                   | Ge -> va >= 0
+                                                   | Gt -> va > 0
+                                                   | Le -> va <= 0
+                        if jump then goto i else next ()
 
-                | Iget (d, r, f) ->
-                    match this.GetReg r with
-                    | RegRef refr -> instanceGet refr f (fun v -> this.SetReg (d, v); next ())
-                    | _ -> failwith "iget on non-object"
-                | Iput (s, r, f) ->
-                    match this.GetReg r with
-                    | RegRef refr -> instancePut refr f (this.GetReg s) next
-                    | _ -> failwith "iput on non-object"
+                    | Aget (d, r, i) ->
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef refr -> arrayGet refr (Store.loadInt << this.GetReg <| i) (fun v -> this.SetReg (d, v); next ())
+                        | _ -> failwith "aget on non-object"
+                    | Aput (s, r, i) ->
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef refr -> arrayPut refr (Store.loadInt << this.GetReg <| i) (this.GetReg s) next
+                        | _ -> failwith "aput on non-object"
 
-                | Sget (d, f) -> staticGet f (fun v -> this.SetReg(d, v); next ())
-                | Sput (s, f) -> staticPut f (this.GetReg s) next
+                    | Iget (d, r, f) ->
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef refr -> instanceGet refr f (fun v -> this.SetReg (d, v); next ())
+                        | _ -> failwith "iget on non-object"
+                    | Iput (s, r, f) ->
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef refr -> instancePut refr f (this.GetReg s) next
+                        | _ -> failwith "iput on non-object"
 
-                | Invoke (kind, (count, meth, a1, a2, a3, a4, a5)) ->
-                    let args = Array.map this.GetReg <| Array.sub [| a1; a2; a3; a4; a5 |] 0 (int count)
-                    match kind with
-                    | InvokeVirtual
-                    | InvokeInterface ->
-                        match this.GetReg a1 with
-                        | RegRef r ->
-                            getObjectType r <| fun t ->
-                                resolveMethod t meth (fun x -> thread.ExecuteMethod x args next)
-                        | _ -> failwith "invoke-interface on non-object"
-                    | InvokeDirect
-                    | InvokeStatic ->
-                        let (Method (dtype, _, _)) = meth
-                        getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, meth, m) args next)
-                    | InvokeSuper ->
-                        match this.GetReg a1 with
-                        | RegRef r ->
-                            getObjectType r <| fun t ->
-                                getClass t <| fun (Class (_, _, s, _, _, _)) ->
-                                    match s with
-                                    | Some supert -> resolveMethod supert meth (fun x -> thread.ExecuteMethod x args next)
-                                    | None -> failwith "invoke-supert on class that doesn't have a super"
-                        | _ -> failwith "invoke-super on non-object"
+                    | Sget (d, f) -> unwind := true; staticGet f (fun v -> this.SetReg(d, v); next ())
+                    | Sput (s, f) -> unwind := true; staticPut f (this.GetReg s) next
 
-                | Neg (t, (d, a)) ->
-                    let v = this.GetReg a
-                    let newval =
-                        match t with
-                        | CoreInteger IntegerInt -> Store.storeInt <| -Store.loadInt v
-                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v).Negate ()
-                        | CoreFloating FloatingFloat -> Store.storeFloat <| -Store.loadFloat v
-                        | CoreFloating FloatingDouble -> Store.storeDouble <| -Store.loadDouble v
-                    this.SetReg(d, newval)
-                    next ()
-                | Not (t, (d, a)) ->
-                    let v = this.GetReg a
-                    let newval =
-                        match t with
-                        | IntegerInt -> Store.storeInt <| ~~~(Store.loadInt v)
-                        | IntegerLong -> Store.storeLong <| (Store.loadLong v).Not ()
-                    this.SetReg(d, newval)
-                    next ()
+                    | Invoke (kind, (count, meth, a1, a2, a3, a4, a5)) ->
+                        unwind := true
+                        let args = Array.map this.GetReg <| Array.sub [| a1; a2; a3; a4; a5 |] 0 (int count)
+                        match kind with
+                        | InvokeVirtual
+                        | InvokeInterface ->
+                            match this.GetReg a1 with
+                            | RegRef r ->
+                                getObjectType r <| fun t ->
+                                    resolveMethod t meth (fun x -> thread.ExecuteMethod x args next)
+                            | _ -> failwith "invoke-interface on non-object"
+                        | InvokeDirect
+                        | InvokeStatic ->
+                            let (Method (dtype, _, _)) = meth
+                            getMethodImpl meth true (fun m -> thread.ExecuteMethod (dtype, meth, m) args next)
+                        | InvokeSuper ->
+                            match this.GetReg a1 with
+                            | RegRef r ->
+                                getObjectType r <| fun t ->
+                                    getClass t <| fun (Class (_, _, s, _, _, _)) ->
+                                        match s with
+                                        | Some supert -> resolveMethod supert meth (fun x -> thread.ExecuteMethod x args next)
+                                        | None -> failwith "invoke-supert on class that doesn't have a super"
+                            | _ -> failwith "invoke-super on non-object"
 
-                | Convert ((t1, t2), (d, s)) ->
-                    (match (t1, t2) with
-                                     | (CoreInteger IntegerInt, CoreInteger IntegerLong) -> Store.storeLong << Convert.intToLong << Store.loadInt
-                                     | (CoreInteger IntegerInt, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.intToFloat << Store.loadInt
-                                     | (CoreInteger IntegerInt, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.intToDouble << Store.loadInt
-                                     | (CoreInteger IntegerLong, CoreInteger IntegerInt) -> Store.storeInt << Convert.longToInt << Store.loadLong
-                                     | (CoreInteger IntegerLong, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.longToFloat << Store.loadLong
-                                     | (CoreInteger IntegerLong, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.longToDouble << Store.loadLong
-                                     | (CoreFloating FloatingFloat, CoreInteger IntegerInt) -> Store.storeInt << Convert.floatToInt << Store.loadFloat
-                                     | (CoreFloating FloatingFloat, CoreInteger IntegerLong) -> Store.storeLong << Convert.floatToLong << Store.loadFloat
-                                     | (CoreFloating FloatingFloat, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.floatToDouble << Store.loadFloat
-                                     | (CoreFloating FloatingDouble, CoreInteger IntegerInt) -> Store.storeInt << Convert.doubleToInt << Store.loadDouble
-                                     | (CoreFloating FloatingDouble, CoreInteger IntegerLong) -> Store.storeLong << Convert.doubleToLong << Store.loadDouble
-                                     | (CoreFloating FloatingDouble, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.doubleToFloat << Store.loadDouble
-                                     | _ -> failwith "Invalid convertion"
-                    ) (this.GetReg s) |> curry this.SetReg d
-                    next ()
-                | IntToSmall (t, (d, s)) ->
-                    let i = Store.loadInt <| this.GetReg s
-                    let r = match t with
-                            | SmallIntByte -> (i <<< 24) >>> 24
-                            | SmallIntChar -> i &&& 0xFFFF
-                            | SmallIntShort -> (i <<< 16) >>> 16
-                    this.SetReg (d, Store.storeInt r)
-                    next ()
+                    | Neg (t, (d, a)) ->
+                        let v = this.GetReg a
+                        let newval =
+                            match t with
+                            | CoreInteger IntegerInt -> Store.storeInt <| -Store.loadInt v
+                            | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v).Negate ()
+                            | CoreFloating FloatingFloat -> Store.storeFloat <| -Store.loadFloat v
+                            | CoreFloating FloatingDouble -> Store.storeDouble <| -Store.loadDouble v
+                        this.SetReg(d, newval)
+                        next ()
+                    | Not (t, (d, a)) ->
+                        let v = this.GetReg a
+                        let newval =
+                            match t with
+                            | IntegerInt -> Store.storeInt <| ~~~(Store.loadInt v)
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v).Not ()
+                        this.SetReg(d, newval)
+                        next ()
 
-                | Add (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 + Store.loadInt v2
-                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Add (Store.loadLong v2)
-                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 + Store.loadFloat v2
-                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 + Store.loadDouble v2
-                    this.SetReg(d, newval)
-                    next ()
-                | Sub (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 - Store.loadInt v2
-                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Subtract (Store.loadLong v2)
-                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 - Store.loadFloat v2
-                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 - Store.loadDouble v2
-                    this.SetReg(d, newval)
-                    next ()
-                | Mul (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 * Store.loadInt v2
-                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Multiply (Store.loadLong v2)
-                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 * Store.loadFloat v2
-                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 * Store.loadDouble v2
-                    this.SetReg(d, newval)
-                    next ()
-                | Div (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 / Store.loadInt v2
-                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Div (Store.loadLong v2)
-                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 / Store.loadFloat v2
-                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 / Store.loadDouble v2
-                    this.SetReg(d, newval)
-                    next ()
-                | Rem (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 % Store.loadInt v2
-                        | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Modulo (Store.loadLong v2)
-                        | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 % Store.loadFloat v2
-                        | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 % Store.loadDouble v2
-                    this.SetReg(d, newval)
-                    next ()
+                    | Convert ((t1, t2), (d, s)) ->
+                        (match (t1, t2) with
+                                         | (CoreInteger IntegerInt, CoreInteger IntegerLong) -> Store.storeLong << Convert.intToLong << Store.loadInt
+                                         | (CoreInteger IntegerInt, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.intToFloat << Store.loadInt
+                                         | (CoreInteger IntegerInt, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.intToDouble << Store.loadInt
+                                         | (CoreInteger IntegerLong, CoreInteger IntegerInt) -> Store.storeInt << Convert.longToInt << Store.loadLong
+                                         | (CoreInteger IntegerLong, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.longToFloat << Store.loadLong
+                                         | (CoreInteger IntegerLong, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.longToDouble << Store.loadLong
+                                         | (CoreFloating FloatingFloat, CoreInteger IntegerInt) -> Store.storeInt << Convert.floatToInt << Store.loadFloat
+                                         | (CoreFloating FloatingFloat, CoreInteger IntegerLong) -> Store.storeLong << Convert.floatToLong << Store.loadFloat
+                                         | (CoreFloating FloatingFloat, CoreFloating FloatingDouble) -> Store.storeDouble << Convert.floatToDouble << Store.loadFloat
+                                         | (CoreFloating FloatingDouble, CoreInteger IntegerInt) -> Store.storeInt << Convert.doubleToInt << Store.loadDouble
+                                         | (CoreFloating FloatingDouble, CoreInteger IntegerLong) -> Store.storeLong << Convert.doubleToLong << Store.loadDouble
+                                         | (CoreFloating FloatingDouble, CoreFloating FloatingFloat) -> Store.storeFloat << Convert.doubleToFloat << Store.loadDouble
+                                         | _ -> failwith "Invalid convertion"
+                        ) (this.GetReg s) |> curry this.SetReg d
+                        next ()
+                    | IntToSmall (t, (d, s)) ->
+                        let i = Store.loadInt <| this.GetReg s
+                        let r = match t with
+                                | SmallIntByte -> (i <<< 24) >>> 24
+                                | SmallIntChar -> i &&& 0xFFFF
+                                | SmallIntShort -> (i <<< 16) >>> 16
+                        this.SetReg (d, Store.storeInt r)
+                        next ()
 
-                | And (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | IntegerInt -> Store.storeInt <| (Store.loadInt v1 &&& Store.loadInt v2)
-                        | IntegerLong -> Store.storeLong <| (Store.loadLong v1).And (Store.loadLong v2)
-                    this.SetReg(d, newval)
-                    next ()
-                | Or (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | IntegerInt -> Store.storeInt <| (Store.loadInt v1 ||| Store.loadInt v2)
-                        | IntegerLong -> Store.storeLong <| (Store.loadLong v1).Or (Store.loadLong v2)
-                    this.SetReg(d, newval)
-                    next ()
-                | Xor (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | IntegerInt -> Store.storeInt <| (Store.loadInt v1 ^^^ Store.loadInt v2)
-                        | IntegerLong -> Store.storeLong <| (Store.loadLong v1).Xor (Store.loadLong v2)
-                    this.SetReg(d, newval)
-                    next ()
-                | Shl (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | IntegerInt -> Store.storeInt <| (Store.loadInt v1 <<< (Store.loadInt v2 &&& 0x1F))
-                        | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftLeft ((Store.loadLong v2).ToInt () &&& 0x1F)
-                    this.SetReg(d, newval)
-                    next ()
-                | Shr (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | IntegerInt -> Store.storeInt <| (Store.loadInt v1 >>> (Store.loadInt v2 &&& 0x1F))
-                        | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRight ((Store.loadLong v2).ToInt () &&& 0x1F)
-                    this.SetReg(d, newval)
-                    next ()
-                | Ushr (t, (d, a, b)) ->
-                    let (v1, v2) = (this.GetReg a, this.GetReg b)
-                    let newval =
-                        match t with
-                        | IntegerInt -> Store.storeInt << int32 <| ((uint32 <| Store.loadInt v1) >>> (Store.loadInt v2 &&& 0x1F))
-                        | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRightUnsigned ((Store.loadLong v2).ToInt () &&& 0x1F)
-                    this.SetReg(d, newval)
-                    next ()
+                    | Add (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 + Store.loadInt v2
+                            | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Add (Store.loadLong v2)
+                            | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 + Store.loadFloat v2
+                            | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 + Store.loadDouble v2
+                        this.SetReg(d, newval)
+                        next ()
+                    | Sub (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 - Store.loadInt v2
+                            | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Subtract (Store.loadLong v2)
+                            | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 - Store.loadFloat v2
+                            | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 - Store.loadDouble v2
+                        this.SetReg(d, newval)
+                        next ()
+                    | Mul (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 * Store.loadInt v2
+                            | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Multiply (Store.loadLong v2)
+                            | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 * Store.loadFloat v2
+                            | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 * Store.loadDouble v2
+                        this.SetReg(d, newval)
+                        next ()
+                    | Div (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 / Store.loadInt v2
+                            | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Div (Store.loadLong v2)
+                            | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 / Store.loadFloat v2
+                            | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 / Store.loadDouble v2
+                        this.SetReg(d, newval)
+                        next ()
+                    | Rem (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | CoreInteger IntegerInt -> Store.storeInt <| Store.loadInt v1 % Store.loadInt v2
+                            | CoreInteger IntegerLong -> Store.storeLong <| (Store.loadLong v1).Modulo (Store.loadLong v2)
+                            | CoreFloating FloatingFloat -> Store.storeFloat <| Store.loadFloat v1 % Store.loadFloat v2
+                            | CoreFloating FloatingDouble -> Store.storeDouble <| Store.loadDouble v1 % Store.loadDouble v2
+                        this.SetReg(d, newval)
+                        next ()
 
-                | AddIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + i)); next ()
-                | RsubIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (i - Store.loadInt (this.GetReg a))); next ()
-                | MulIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) * i)); next ()
-                | DivIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) / i)); next ()
-                | RemIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) % i)); next ()
-                | AndIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) &&& i)); next ()
-                | OrIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) ||| i)); next ()
-                | XorIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) ^^^ i)); next ()
-                | ShlIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) <<< (i &&& 0x1F))); next ()
-                | ShrIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) >>> (i &&& 0x1F))); next ()
-                | UshrIntLit (d, a, i) ->
-                    this.SetReg(d, Store.storeInt << int <| ((uint32 <| Store.loadInt (this.GetReg a)) >>> (i &&& 0x1F))); next ()
+                    | And (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | IntegerInt -> Store.storeInt <| (Store.loadInt v1 &&& Store.loadInt v2)
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).And (Store.loadLong v2)
+                        this.SetReg(d, newval)
+                        next ()
+                    | Or (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | IntegerInt -> Store.storeInt <| (Store.loadInt v1 ||| Store.loadInt v2)
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).Or (Store.loadLong v2)
+                        this.SetReg(d, newval)
+                        next ()
+                    | Xor (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | IntegerInt -> Store.storeInt <| (Store.loadInt v1 ^^^ Store.loadInt v2)
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).Xor (Store.loadLong v2)
+                        this.SetReg(d, newval)
+                        next ()
+                    | Shl (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | IntegerInt -> Store.storeInt <| (Store.loadInt v1 <<< (Store.loadInt v2 &&& 0x1F))
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftLeft ((Store.loadLong v2).ToInt () &&& 0x1F)
+                        this.SetReg(d, newval)
+                        next ()
+                    | Shr (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | IntegerInt -> Store.storeInt <| (Store.loadInt v1 >>> (Store.loadInt v2 &&& 0x1F))
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRight ((Store.loadLong v2).ToInt () &&& 0x1F)
+                        this.SetReg(d, newval)
+                        next ()
+                    | Ushr (t, (d, a, b)) ->
+                        let (v1, v2) = (this.GetReg a, this.GetReg b)
+                        let newval =
+                            match t with
+                            | IntegerInt -> Store.storeInt << int32 <| ((uint32 <| Store.loadInt v1) >>> (Store.loadInt v2 &&& 0x1F))
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRightUnsigned ((Store.loadLong v2).ToInt () &&& 0x1F)
+                        this.SetReg(d, newval)
+                        next ()
+
+                    | AddIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) + i)); next ()
+                    | RsubIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (i - Store.loadInt (this.GetReg a))); next ()
+                    | MulIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) * i)); next ()
+                    | DivIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) / i)); next ()
+                    | RemIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) % i)); next ()
+                    | AndIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) &&& i)); next ()
+                    | OrIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) ||| i)); next ()
+                    | XorIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) ^^^ i)); next ()
+                    | ShlIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) <<< (i &&& 0x1F))); next ()
+                    | ShrIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt (Store.loadInt (this.GetReg a) >>> (i &&& 0x1F))); next ()
+                    | UshrIntLit (d, a, i) ->
+                        this.SetReg(d, Store.storeInt << int <| ((uint32 <| Store.loadInt (this.GetReg a)) >>> (i &&& 0x1F))); next ()
+            let a = JavaScript.TypeOf JavaScript.Undefined
+            ()
 
     [<JavaScript>]
     let mutable thread = None
