@@ -11,14 +11,6 @@
         <script src="./output.js" type="text/javascript"></script>
 
         <script type="text/javascript">
-        IntelliFactory.Runtime.Define(Dalvik, {
-            ThreadWorker: {
-                requestResource: function(r, cont) {
-                                    setTimeout(function() { Dalvik.Manager.processRequest(r, cont); }, 0);
-                                 }
-            }
-        });
-
         if (typeof IntelliFactory !== 'undefined')
             IntelliFactory.Runtime.Start();
         </script>
@@ -29,25 +21,39 @@
         <output id="list"></output>
 
         <script>
+            var mem_manager;
+
             function handleFileSelect(evt) {
+                mem_manager = new SharedWorker('manager.js').port;
+                mem_manager.start();
+                mem_manager.onmessage = function(e) {
+                    tag = e.data[0];
+                    d = e.data[1];
+                    if (tag == 'log') {
+                        console.log("MANAGER: " + d);
+                    } else {
+                        spawnThread(d);
+                    }
+                }
                 var file = evt.target.files[0];
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     var bytes = e.target.result;
-                    Dalvik.Manager.init()(bytes);
+                    mem_manager.postMessage(bytes);
+                    //mem_manager.postMessage(bytes, [bytes]);
                 }
                 reader.readAsArrayBuffer(file);
             }
 
             document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
-            function spawnThread() {
+            function spawnThread(args) {
+                m = new SharedWorker('manager.js');
                 w = new Worker('thread.js');
                 w.onmessage = function(e) {
-                    Dalvik.Manager.processRequest(e.data, function(reply) {
-                        w.postMessage(reply);
-                    });
+                    console.log(e.data);
                 }
+                w.postMessage([m.port, args], [m.port]);
                 return w;
             }
         </script>

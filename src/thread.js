@@ -3,6 +3,7 @@ importScripts('gLong.js');
 importScripts('output.js');
 
 var manager;
+var interactive;
 
 function unexpected(e) {
     throw "Unexpected message from manager";
@@ -10,13 +11,17 @@ function unexpected(e) {
 
 IntelliFactory.Runtime.Define(Dalvik, {
     ThreadWorker: {
-        requestResource: function(r, cont) {
-                            manager.onmessage = function(m) {
-                                manager.onmessage = unexpected;
-                                cont(m.data);
+        requestResource:    function(r, cont) {
+                               manager.onmessage = function(m) {
+                                   manager.onmessage = unexpected;
+                                   cont(m.data);
+                               }
+                               manager.postMessage(r);
+                            },
+        requestInteraction: function(r, cont) {
+                                interactive.postMessage(r);
+                                setTimeout(cont, 0);
                             }
-                            manager.postMessage(r);
-                         }
     }
 });
 
@@ -26,12 +31,10 @@ IntelliFactory.Runtime.Start();
 Dalvik.Native.init();
 
 
-//self.onmessage = function(e) {
-//    manager = e.ports[0];
-//    manager.onmessage = unexpected;
-//}
-manager = self; // not literally `self`, but parent
-manager.onmessage = function(e) {
+interactive = self; // not literally `self`, but parent
+interactive.onmessage = function(e) {
+    manager = e.data[0];
+    manager.start();
     manager.onmessage = unexpected;
-    Dalvik.ThreadWorker.init(e.data, []);
+    Dalvik.ThreadWorker.init(e.data[1], []);
 }
