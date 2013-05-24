@@ -12,6 +12,9 @@ module ThreadWorker =
     [<Stub>]
     let requestResource (r : ResourceRequest, cont : ResourceReply -> unit) : unit = X<_>
 
+    [<Stub>]
+    let requestInteraction (r : InteractionRequest, cont : unit -> unit) : unit = X<_>
+
     [<JavaScript>]
     let cacheClasses : Dictionary<Dex.Type, Dex.Class> = Dictionary ()
 

@@ -32,17 +32,11 @@ module Native =
                                             "V", [| "I" |]),
             fun (args, cont) ->
                 let v = Store.loadInt args.[0]
-                ThreadWorker.requestResource (ConsoleLog v, fun r ->
-                    match r with
-                    | RequestProcessed -> cont None
-                    | _ -> failwith "Unexpected reply")
+                ThreadWorker.requestInteraction (ConsoleLog v, fun () -> cont None)
         )
         registerNativeMethod (genSignature ("LJslog;", "log",
                                             "V", [| "J" |]),
             fun (args, cont) ->
                 let v = (Store.loadLong args.[0]).ToString ()
-                ThreadWorker.requestResource (ConsoleLog v, fun r ->
-                    match r with
-                    | RequestProcessed -> cont None
-                    | _ -> failwith "Unexpected reply")
+                ThreadWorker.requestInteraction (ConsoleLog v, fun () -> cont None)
         )

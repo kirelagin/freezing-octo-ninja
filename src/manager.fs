@@ -152,7 +152,3 @@ module Manager =
             classStaticData dtype <| fun d ->
                                         d.[f] <- v
                                         cont RequestProcessed
-
-        | ConsoleLog v ->
-            JavaScript.Log(v)
-            cont RequestProcessed

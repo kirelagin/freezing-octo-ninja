@@ -1,10 +1,10 @@
 namespace Dalvik
 
+open IntelliFactory.WebSharper
+[<JavaScript>]
 module Shared =
-    open IntelliFactory.WebSharper
     open Coretypes
 
-    [<JavaScript>]
     type ResourceRequest =
         | GetObjectType of dref
         | RequestClass of Dex.Type
@@ -18,13 +18,12 @@ module Shared =
         | PutStaticField of Dex.Field * RegValue
         | GetInstanceField of dref * Dex.Field
         | PutInstanceField of dref * Dex.Field * RegValue
-
-        | ConsoleLog of obj
-
-    [<JavaScript>]
     type ResourceReply =
         | ProvideType of Dex.Type
         | ProvideClass of Dex.Class
         | ProvideInstance of dref
         | ProvideValue of RegValue
         | RequestProcessed
+
+    type InteractionRequest =
+        | ConsoleLog of obj
