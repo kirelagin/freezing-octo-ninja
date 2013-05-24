@@ -33,8 +33,8 @@ Dalvik.Native.init();
 
 interactive = self; // not literally `self`, but parent
 interactive.onmessage = function(e) {
-    manager = e.data[0];
+    manager = e.ports[0];
     manager.start();
     manager.onmessage = unexpected;
-    Dalvik.ThreadWorker.init(e.data[1], []);
+    Dalvik.ThreadWorker.init(e.data, []);
 }

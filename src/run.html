@@ -24,15 +24,14 @@
             var mem_manager;
 
             function handleFileSelect(evt) {
-                mem_manager = new SharedWorker('manager.js').port;
-                mem_manager.start();
+                mem_manager = new Worker('manager.js');
                 mem_manager.onmessage = function(e) {
                     tag = e.data[0];
                     d = e.data[1];
                     if (tag == 'log') {
                         console.log("MANAGER: " + d);
                     } else {
-                        spawnThread(d);
+                        spawnThread(e.ports[0], d);
                     }
                 }
                 var file = evt.target.files[0];
@@ -47,13 +46,12 @@
 
             document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
-            function spawnThread(args) {
-                m = new SharedWorker('manager.js');
+            function spawnThread(port, args) {
                 w = new Worker('thread.js');
                 w.onmessage = function(e) {
                     console.log(e.data);
                 }
-                w.postMessage([m.port, args], [m.port]);
+                w.postMessage(args, [port]);
                 return w;
             }
         </script>
