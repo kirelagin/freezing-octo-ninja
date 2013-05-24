@@ -199,8 +199,8 @@ module ThreadWorker =
                     | MoveResult r -> this.SetReg(r, thread.LastResult); next ()
                     //| MoveException //TODO #10
 
-                    | ReturnVoid () -> thread.Return None cont
-                    | Return r -> thread.Return (Some <| this.GetReg r) cont
+                    | ReturnVoid () -> unwind := true; thread.Return None cont
+                    | Return r -> unwind := true; thread.Return (Some <| this.GetReg r) cont
 
                     | Const4 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
                     | Const16 (r, v) -> this.SetReg (r, Store.storeInt << int32 <| v); next ()
