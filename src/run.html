@@ -22,23 +22,23 @@
 
         <script>
             var mem_manager;
+            mem_manager = new Worker('manager.js');
+            mem_manager.onmessage = function(e) {
+                tag = e.data[0];
+                d = e.data[1];
+                if (tag == 'log') {
+                    console.log("MANAGER: " + d);
+                } else {
+                    spawnThread(e.ports[0], d);
+                }
+            }
 
             function handleFileSelect(evt) {
-                mem_manager = new Worker('manager.js');
-                mem_manager.onmessage = function(e) {
-                    tag = e.data[0];
-                    d = e.data[1];
-                    if (tag == 'log') {
-                        console.log("MANAGER: " + d);
-                    } else {
-                        spawnThread(e.ports[0], d);
-                    }
-                }
                 var file = evt.target.files[0];
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     var bytes = e.target.result;
-                    mem_manager.postMessage(bytes);
+                    mem_manager.postMessage(['load', bytes]);
                     //mem_manager.postMessage(bytes, [bytes]);
                 }
                 reader.readAsArrayBuffer(file);
