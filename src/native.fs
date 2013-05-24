@@ -41,6 +41,18 @@ module Native =
                 ThreadWorker.requestInteraction (ConsoleLog v, fun () -> cont None)
         )
         registerNativeMethod (genSignature ("Ljava/io/PrintStream;", "println",
+                                            "V", [| "F" |]),
+            fun (args, cont) ->
+                let v = (Store.loadFloat args.[1]).ToString ()
+                ThreadWorker.requestInteraction (ConsoleLog v, fun () -> cont None)
+        )
+        registerNativeMethod (genSignature ("Ljava/io/PrintStream;", "println",
+                                            "V", [| "D" |]),
+            fun (args, cont) ->
+                let v = (Store.loadDouble args.[1]).ToString ()
+                ThreadWorker.requestInteraction (ConsoleLog v, fun () -> cont None)
+        )
+        registerNativeMethod (genSignature ("Ljava/io/PrintStream;", "println",
                                             "V", [| "Ljava/lang/String;" |]),
             fun (args, cont) ->
                 match args.[1] with
