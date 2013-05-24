@@ -133,6 +133,13 @@ module ThreadWorker =
                     | None -> failwith "Method not found" //TODO #10 throw IncompatibleClassChangeError
                     | Some t -> resolveMethod t meth cont
 
+    [<JavaScript>]
+    let getWholeArray (refr : dref) (cont : RegValue array -> unit) =
+        requestResource (GetWholeArray refr, fun r ->
+            match r with
+            | ProvideArray data -> cont data
+            | _ -> failwith <| "Unexpected reply. I need an array but got a " + r.ToString ())
+
 
     // Native methods library
     [<JavaScript>]

@@ -45,6 +45,14 @@ module Native =
             fun (args, cont) ->
                 match args.[1] with
                 | RegRef dref ->
-                    ThreadWorker.requestInteraction (ConsoleLog dref, fun () -> cont None)
-                | _ -> failwith "Wrong object type"
+                    ThreadWorker.instanceGet dref (Dex.Field (Dex.Type "Ljava/lang/String;", Dex.Type "[C", "value")) (fun value ->
+                        match value with
+                        | RegRef arref ->
+                            ThreadWorker.getWholeArray arref (fun chars ->
+                                let str = String.fromIntArray << Array.map Store.loadInt <| chars
+                                ThreadWorker.requestInteraction (ConsoleLog str, fun () -> cont None)
+                            )
+                        | _ -> failwith "Wrong register type"
+                    )
+                | _ -> failwith "Wrong register type"
         )

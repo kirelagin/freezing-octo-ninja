@@ -11,6 +11,7 @@ module Shared =
         | CreateInstance of Dex.Type
         | CreateArray of int32 * Dex.Type
         | FillArray of dref * RegValue array
+        | GetWholeArray of dref
         | GetArrayLength of dref
         | GetArrayItem of dref * int32
         | PutArrayItem of dref * int32 * RegValue
@@ -23,6 +24,7 @@ module Shared =
         | ProvideClass of Dex.Class
         | ProvideInstance of dref
         | ProvideValue of RegValue
+        | ProvideArray of RegValue array
         | RequestProcessed
 
     type InteractionRequest =

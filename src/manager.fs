@@ -152,3 +152,7 @@ module Manager =
             classStaticData dtype <| fun d ->
                                         d.[f] <- v
                                         cont RequestProcessed
+        | GetWholeArray refr ->
+        match heap.[refr] with
+        | VMArray (_, data) -> cont << ProvideArray <| data
+        | _ -> failwith "GetWholeArray of object"
