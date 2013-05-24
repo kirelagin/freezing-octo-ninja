@@ -19,7 +19,6 @@ module Shared =
         | GetInstanceField of dref * Dex.Field
         | PutInstanceField of dref * Dex.Field * RegValue
 
-        | ArrayCopy of dref * int * dref * int * int
         | ConsoleLog of obj
 
     [<JavaScript>]
