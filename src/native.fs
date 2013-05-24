@@ -28,15 +28,23 @@ module Native =
             fun (args, cont) ->
                 cont None
         )
-        registerNativeMethod (genSignature ("LJslog;", "log",
+        registerNativeMethod (genSignature ("Ljava/io/PrintStream;", "println",
                                             "V", [| "I" |]),
             fun (args, cont) ->
-                let v = Store.loadInt args.[0]
+                let v = Store.loadInt args.[1]
                 ThreadWorker.requestInteraction (ConsoleLog v, fun () -> cont None)
         )
-        registerNativeMethod (genSignature ("LJslog;", "log",
+        registerNativeMethod (genSignature ("Ljava/io/PrintStream;", "println",
                                             "V", [| "J" |]),
             fun (args, cont) ->
-                let v = (Store.loadLong args.[0]).ToString ()
+                let v = (Store.loadLong args.[1]).ToString ()
                 ThreadWorker.requestInteraction (ConsoleLog v, fun () -> cont None)
+        )
+        registerNativeMethod (genSignature ("Ljava/io/PrintStream;", "println",
+                                            "V", [| "Ljava/lang/String;" |]),
+            fun (args, cont) ->
+                match args.[1] with
+                | RegRef dref ->
+                    ThreadWorker.requestInteraction (ConsoleLog dref, fun () -> cont None)
+                | _ -> failwith "Wrong object type"
         )
