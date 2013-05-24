@@ -54,11 +54,11 @@ module Coretypes =
         let storeFloat (i : float32) = Reg32 << As<int32> <| (new Int32Array((new Float32Array([| i |])).Buffer)).Get(0uL) //TODO #4
 
         let loadDouble (v : RegValue) = match v with
-                                        | Reg64 gl -> (new Float64Array((new Int32Array([| As<int16>(gl.GetHighBits()); As<int16>(gl.GetLowBits()) |])).Buffer)).Get(0uL) //TODO #4
+                                        | Reg64 gl -> (new Float64Array((new Int32Array([| As<int16>(gl.GetLowBits()); As<int16>(gl.GetHighBits()) |])).Buffer)).Get(0uL) //TODO #4
                                         | _ -> failwith "Trying to load a double from non-64-bit-register"
 
         let storeDouble (i : float64) = let r = new Int32Array((new Float64Array([| i |])).Buffer)
-                                        Reg64 <| GLong.FromBits (As<int32>(r.Get(1uL)), As<int32>(r.Get(0uL))) //TODO #4
+                                        Reg64 <| GLong.FromBits (As<int32>(r.Get(0uL)), As<int32>(r.Get(1uL))) //TODO #4
 
 
     //module NumberOps =
