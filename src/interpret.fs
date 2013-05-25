@@ -476,7 +476,7 @@ module ThreadWorker =
                         let newval =
                             match t with
                             | IntegerInt -> Store.storeInt <| (Store.loadInt v1 <<< (Store.loadInt v2 &&& 0x1F))
-                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftLeft ((Store.loadLong v2).ToInt () &&& 0x1F)
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftLeft (Store.loadInt v2 &&& 0x1F)
                         this.SetReg(d, newval)
                         next ()
                     | Shr (t, (d, a, b)) ->
@@ -484,7 +484,7 @@ module ThreadWorker =
                         let newval =
                             match t with
                             | IntegerInt -> Store.storeInt <| (Store.loadInt v1 >>> (Store.loadInt v2 &&& 0x1F))
-                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRight ((Store.loadLong v2).ToInt () &&& 0x1F)
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRight (Store.loadInt v2 &&& 0x1F)
                         this.SetReg(d, newval)
                         next ()
                     | Ushr (t, (d, a, b)) ->
@@ -492,7 +492,7 @@ module ThreadWorker =
                         let newval =
                             match t with
                             | IntegerInt -> Store.storeInt << int32 <| ((uint32 <| Store.loadInt v1) >>> (Store.loadInt v2 &&& 0x1F))
-                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRightUnsigned ((Store.loadLong v2).ToInt () &&& 0x1F)
+                            | IntegerLong -> Store.storeLong <| (Store.loadLong v1).ShiftRightUnsigned (Store.loadInt v2 &&& 0x1F)
                         this.SetReg(d, newval)
                         next ()
 
