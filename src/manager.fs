@@ -74,7 +74,13 @@ module Manager =
                     | VMArray of Dex.JavaType * RegValue array
 
     [<JavaScript>]
-    let heap : VMObject array = [| |]
+    type VMMonitor = VMMonitor of int ref * Worker array
+
+    [<JavaScript>]
+    let heap : (VMObject * VMMonitor) array = [| |]
+
+    [<JavaScript>]
+    let monitorable (vmobj : VMObject) : (VMObject * VMMonitor) = (vmobj, VMMonitor (ref 0, [| |]))
 
     [<JavaScript>]
     let dereference ref =
@@ -85,13 +91,13 @@ module Manager =
     [<JavaScript>]
     let createInstance (t : Dex.Type) (cont : dref -> unit) =
         classOfType t <| fun c ->
-            Array.push heap <| VMInstance (c, Dictionary ())
+            Array.push heap << monitorable <| VMInstance (c, Dictionary ())
             cont <| heap.Length - 1
 
     [<JavaScript>]
     let createArray (dtype : Dex.Type, size : int) =
         match Runtime.javatypeOfType dtype with
-        | JavaReferenceType (ArrayType t) -> Array.push heap <| VMArray (t, Array.create size (Store.storeInt 0))
+        | JavaReferenceType (ArrayType t) -> Array.push heap << monitorable <| VMArray (t, Array.create size (Store.storeInt 0))
                                              heap.Length - 1
         | _ -> failwith "Bad array type"
 
@@ -104,36 +110,36 @@ module Manager =
             createInstance dtype (ProvideInstance >> cont)
         | GetObjectType refr ->
             match heap.[refr] with
-            | VMInstance (Class (t, _, _, _, _, _), _) ->
+            | VMInstance (Class (t, _, _, _, _, _), _), _ ->
                 cont << ProvideType <| t
             | _ -> failwith "Instance expected"
         | CreateArray (size, dtype) ->
             cont << ProvideInstance <| createArray (dtype, size)
         | FillArray (refr, vals) ->
             match heap.[refr] with
-            | VMArray (t, a) ->
+            | VMArray (t, a), mon ->
                 let n = Array.append vals (Array.sub a vals.Length (a.Length - vals.Length))
-                heap.[refr] <- VMArray (t, n)
+                heap.[refr] <- VMArray (t, n), mon
                 cont RequestProcessed
             | _ -> failwith "Array expected"
         | GetArrayLength refr ->
             match heap.[refr] with
-            | VMArray (_, a) ->
+            | VMArray (_, a), _ ->
                 cont << ProvideValue << Store.storeInt <| a.Length
             | _ -> failwith "Array expected"
         | GetArrayItem (refr, i) ->
             match heap.[refr] with
-            | VMArray (_, a) -> cont << ProvideValue <| a.[i]
+            | VMArray (_, a), _ -> cont << ProvideValue <| a.[i]
             | _ -> failwith "Array expected"
         | PutArrayItem (refr, i, v) ->
             match heap.[refr] with
-            | VMArray (t, a) ->
+            | VMArray (t, a), _ ->
                 a.[i] <- v
                 cont RequestProcessed
             | _ -> failwith "Array expected"
         | GetInstanceField (refr, f) ->
             match heap.[refr] with
-            | VMInstance (_, d) ->
+            | VMInstance (_, d), _ ->
                 let v = match Dictionary.tryGet d f with
                         | Some v -> v
                         | None -> Runtime.defaultValue f
@@ -141,8 +147,8 @@ module Manager =
             | _ -> failwith "Instance expected"
         | PutInstanceField (refr, f, v) ->
             match heap.[refr] with
-            | VMInstance (_, d) -> d.[f] <- v
-                                   cont RequestProcessed
+            | VMInstance (_, d), _ -> d.[f] <- v
+                                      cont RequestProcessed
             | _ -> failwith "Instance expected"
         | GetStaticField f ->
             let (Field (dtype, _, _)) = f
@@ -153,6 +159,6 @@ module Manager =
                                         d.[f] <- v
                                         cont RequestProcessed
         | GetWholeArray refr ->
-        match heap.[refr] with
-        | VMArray (_, data) -> cont << ProvideArray <| data
-        | _ -> failwith "GetWholeArray of object"
+            match heap.[refr] with
+            | VMArray (_, data), _ -> cont << ProvideArray <| data
+            | _ -> failwith "GetWholeArray of object"

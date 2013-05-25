@@ -112,3 +112,8 @@ module JsUtil =
     type Date () =
         [<Name "getTime">]
         member this.GetTime () : float64 = X<_>
+
+    [<Name [| "Worker" |]>]
+    [<Stub>]
+    type Worker private () =
+        member this.PostMessage (msg : obj) : unit = X<_>
