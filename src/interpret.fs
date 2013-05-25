@@ -215,7 +215,7 @@ module ThreadWorker =
                     | ConstHigh16 (r, v) -> this.SetReg (r, Store.storeInt (int32 v <<< 16)); next ()
                     | ConstWide16 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt << int32 <| v); next ()
                     | ConstWide32 (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromInt <| v); next ()
-                    | ConstWide (r, v) -> this.SetReg (r, Store.storeLong v); next ()
+                    | ConstWide (r, v) -> this.SetReg (r, Store.storeLong << GLong.FromBits <| v); next ()
                     | ConstWideHigh16 (r, v) -> this.SetReg (r, Store.storeLong <| GLong.FromBits (0, int32 v <<< 16)); next ()
                     | ConstString (r, s) -> unwind := true; thread.CreateString s (fun str -> this.SetReg (r, RegRef str); next ())
                     //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?

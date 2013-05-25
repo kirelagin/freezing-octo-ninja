@@ -78,7 +78,7 @@ module DexLoader =
         let read3rc (stream : FileArray.DexFileArray) : uint8 * uint16 * reg =
             (stream.GetByte (), stream.GetUInt16 (), reg <| stream.GetUInt16 ())
 
-        let read51l (stream : FileArray.DexFileArray) : reg * GLong =
+        let read51l (stream : FileArray.DexFileArray) : reg * (int32 * int32) =
             (reg <| stream.GetByte (), stream.GetInt64 ())
 
 
@@ -299,7 +299,7 @@ module DexLoader =
                 | 0x02uy -> StaticReg << Store.storeInt << int32 <| stream.GetInt16Var (int value_arg + 1)
                 | 0x03uy -> StaticReg << Store.storeInt << int32 <| stream.GetUInt16Var (int value_arg + 1)
                 | 0x04uy -> StaticReg << Store.storeInt << int32 <| stream.GetInt32Var (int value_arg + 1)
-                | 0x06uy -> StaticReg << Store.storeLong <| stream.GetInt64Var (int value_arg + 1)
+                | 0x06uy -> StaticReg << Store.storeLong << GLong.FromBits <| stream.GetInt64Var (int value_arg + 1)
                 | 0x10uy -> StaticReg << Store.storeFloat <| stream.GetFloatVar (int value_arg + 1)
                 | 0x11uy -> StaticReg << Store.storeDouble <| stream.GetDoubleVar (int value_arg + 1)
                 | 0x17uy -> StaticString <| dexf.Strings.[int <| stream.GetUInt32Var (int value_arg + 1)]
@@ -386,7 +386,7 @@ module DexLoader =
                                     let data = if element_width <= 4 then
                                                     Array.init size (fun _ -> Store.storeInt <| stream.GetInt32Var element_width)
                                                 elif element_width = 8 then
-                                                    Array.init size (fun _ -> Store.storeLong <| stream.GetInt64 ())
+                                                    Array.init size (fun _ -> Store.storeLong << GLong.FromBits <| stream.GetInt64 ())
                                                 else
                                                     failwith "Bad element width in fill-array-data-payload"
                                     stream.Seek oldoff |> ignore

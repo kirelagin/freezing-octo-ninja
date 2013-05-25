@@ -75,7 +75,7 @@ module Dex =
         (* 15 *)    | ConstHigh16 of reg * int16
         (* 16 *)    | ConstWide16 of reg * int16        // 10
         (* 17 *)    | ConstWide32 of reg * int32
-        (* 18 *)    | ConstWide of reg * GLong
+        (* 18 *)    | ConstWide of reg * (int * int)
         (* 19 *)    | ConstWideHigh16 of reg * int16
         (* 1a *)    | ConstString of reg * string
         (* 1c *)    | ConstClass of reg * Type
