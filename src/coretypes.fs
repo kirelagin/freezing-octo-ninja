@@ -16,7 +16,7 @@ module Coretypes =
 
     type RegValue =
         | Reg32 of int32
-        | Reg64 of GLong
+        | Reg64 of (int32 * int32)
         | RegRef of dref
 
 
@@ -42,10 +42,10 @@ module Coretypes =
         let storeInt (i : int32) = Reg32 (int32 i)
 
         let loadLong (v : RegValue) = match v with
-                                        | Reg64 i -> i
+                                        | Reg64 l -> GLong.FromBits l
                                         | _ -> failwith "Trying to load a long from non-64-bit register"
 
-        let storeLong (i : GLong) = Reg64 i
+        let storeLong (i : GLong) = Reg64 (i.GetLowBits (), i.GetHighBits ())
 
         let loadFloat (v : RegValue) = match v with
                                         | Reg32 i -> (new Float32Array((new Int32Array([| As<int16>(i) |])).Buffer)).Get(0uL) //TODO #4
@@ -54,11 +54,11 @@ module Coretypes =
         let storeFloat (i : float32) = Reg32 << As<int32> <| (new Int32Array((new Float32Array([| i |])).Buffer)).Get(0uL) //TODO #4
 
         let loadDouble (v : RegValue) = match v with
-                                        | Reg64 gl -> (new Float64Array((new Int32Array([| As<int16>(gl.GetLowBits()); As<int16>(gl.GetHighBits()) |])).Buffer)).Get(0uL) //TODO #4
+                                        | Reg64 (lo, hi) -> (new Float64Array((new Int32Array([| As<int16> lo; As<int16> hi |])).Buffer)).Get(0uL) //TODO #4
                                         | _ -> failwith "Trying to load a double from non-64-bit-register"
 
         let storeDouble (i : float64) = let r = new Int32Array((new Float64Array([| i |])).Buffer)
-                                        Reg64 <| GLong.FromBits (As<int32>(r.Get(0uL)), As<int32>(r.Get(1uL))) //TODO #4
+                                        Reg64 <| (As<int32>(r.Get 0uL), As<int32>(r.Get 1uL)) //TODO #4
 
 
     //module NumberOps =
