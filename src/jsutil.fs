@@ -36,6 +36,9 @@ module JsUtil =
         [<Inline "$arr.pop()">]
         let pop (arr : 'a array) : 'a = X<_>
 
+        [<Inline "$arr.shift()">]
+        let shift (arr : 'a array) : 'a = X<_>
+
     module Number =
         [<Inline "isFinite($v)">]
         let isFinite (v : 'a) : bool = X<_>
@@ -113,7 +116,6 @@ module JsUtil =
         [<Name "getTime">]
         member this.GetTime () : float64 = X<_>
 
-    [<Name [| "Worker" |]>]
-    [<Stub>]
-    type Worker private () =
-        member this.PostMessage (msg : obj) : unit = X<_>
+    type ThreadId private () =
+        [<Inline "$a === $b">]
+        static member JsCompare (a : ThreadId, b : ThreadId) : bool = X<_>

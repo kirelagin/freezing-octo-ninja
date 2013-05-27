@@ -46,12 +46,12 @@
 
             document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
-            function spawnThread(port, args) {
+            function spawnThread(port, data) {
                 w = new Worker('thread.js');
                 w.onmessage = function(e) {
                     console.log(e.data);
                 }
-                w.postMessage(args, [port]);
+                w.postMessage(data, [port]);
                 return w;
             }
         </script>

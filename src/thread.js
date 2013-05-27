@@ -36,5 +36,5 @@ interactive.onmessage = function(e) {
     manager = e.ports[0];
     manager.start();
     manager.onmessage = unexpected;
-    Dalvik.ThreadWorker.init(e.data, []);
+    Dalvik.ThreadWorker.init(e.data[0], e.data[1]);
 }
