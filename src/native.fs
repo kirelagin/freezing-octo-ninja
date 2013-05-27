@@ -68,3 +68,9 @@ module Native =
                     )
                 | _ -> failwith "Wrong register type"
         )
+        registerNativeMethod (genSignature ("Ljava/lang/Thread;", "sleep",
+                                            "V", [| "J" |]),
+            fun (args, cont) ->
+                let millis = Store.loadLong args.[0]
+                JavaScript.SetTimeout (fun () -> cont None) (As<int> <| millis.ToNumber ()) |> ignore
+        )
