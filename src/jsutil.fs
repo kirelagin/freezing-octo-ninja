@@ -34,7 +34,7 @@ module JsUtil =
         let push (arr : 'a array) (x : 'a) : unit = X<_>
         
         [<Inline "$arr.pop()">]
-        let pop (arr : 'a array) : unit = X<_>
+        let pop (arr : 'a array) : 'a = X<_>
 
     module Number =
         [<Inline "isFinite($v)">]

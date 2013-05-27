@@ -140,6 +140,20 @@ module ThreadWorker =
             | ProvideArray data -> cont data
             | _ -> failwith <| "Unexpected reply. I need an array but got a " + r.ToString ())
 
+    [<JavaScript>]
+    let monitorEnter (refr : dref) (cont : unit -> unit) =
+        requestResource (EnterMonitor refr, fun r ->
+            match r with
+            | RequestProcessed -> cont ()
+            | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
+
+    [<JavaScript>]
+    let monitorExit (refr : dref) (cont : unit -> unit) =
+        requestResource (ExitMonitor refr, fun r ->
+            match r with
+            | RequestProcessed -> cont ()
+            | _ -> failwith <| "Unexpected reply. I need a RequestProcessed but got a " + r.ToString ())
+
 
     // Native methods library
     [<JavaScript>]
@@ -159,7 +173,7 @@ module ThreadWorker =
                 nativelib.[meth] (args, fun r -> ret <- r; cont ())
         member this.Return (r : RegValue option) (cont : unit -> unit) =
             ret <- r
-            Array.pop frames
+            Array.pop frames |> ignore
             cont ()
         member this.LastResult = match ret with
                                  | Some r ->
@@ -220,8 +234,16 @@ module ThreadWorker =
                     | ConstString (r, s) -> unwind := true; thread.CreateString s (fun str -> this.SetReg (r, RegRef str); next ())
                     //| ConstClass (r, p) -> this.SetReg (r, JsRef // TODO: get a dalvik-reference to a string? Or request and store the string itself?
 
-                    //| MonitorEnter r -> this.GetReg r // TODO: send monitor-enter message
-                    //| MonitorExit r -> this.GetReg r // TODO: send monitor-enter message
+                    | MonitorEnter r -> 
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef refr -> monitorEnter refr next
+                        | _ -> failwith "Not an object"
+                    | MonitorExit r -> 
+                        unwind := true
+                        match this.GetReg r with
+                        | RegRef refr -> monitorExit refr next
+                        | _ -> failwith "Not an object"
 
                     // ops missing…
 

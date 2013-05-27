@@ -19,6 +19,8 @@ module Shared =
         | PutStaticField of Dex.Field * RegValue
         | GetInstanceField of dref * Dex.Field
         | PutInstanceField of dref * Dex.Field * RegValue
+        | EnterMonitor of dref
+        | ExitMonitor of dref
     type ResourceReply =
         | ProvideType of Dex.Type
         | ProvideClass of Dex.Class

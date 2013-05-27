@@ -74,7 +74,7 @@ module Manager =
                     | VMArray of Dex.JavaType * RegValue array
 
     [<JavaScript>]
-    type VMMonitor = VMMonitor of int ref * Worker array
+    type VMMonitor = VMMonitor of int ref * (Worker * (unit -> unit)) array
 
     [<JavaScript>]
     let heap : (VMObject * VMMonitor) array = [| |]
@@ -102,7 +102,7 @@ module Manager =
         | _ -> failwith "Bad array type"
 
     [<JavaScript>]
-    let processRequest (r : ResourceRequest, cont : ResourceReply -> unit) =
+    let processRequest (r : ResourceRequest, w : Worker, cont : ResourceReply -> unit) =
         match r with
         | RequestClass (dtype) ->
             classOfType dtype (ProvideClass >> cont)
@@ -162,3 +162,24 @@ module Manager =
             match heap.[refr] with
             | VMArray (_, data), _ -> cont << ProvideArray <| data
             | _ -> failwith "GetWholeArray of object"
+
+        | EnterMonitor dref ->
+            let _, VMMonitor (mcount, mqueue) = heap.[dref]
+            if Array.length mqueue > 0 && fst mqueue.[0] = w then
+                mcount := !mcount + 1
+                cont RequestProcessed
+            else
+                Array.push mqueue (w, fun () -> cont RequestProcessed)
+                if Array.length mqueue = 1 then
+                    cont RequestProcessed
+        | ExitMonitor dref ->
+            let _, VMMonitor (mcount, mqueue) = heap.[dref]
+            if fst mqueue.[0] <> w then failwith "Thread does not own this monitor" else
+            if !mcount > 0 then
+                mcount := !mcount - 1
+                cont RequestProcessed
+            else
+                Array.pop mqueue |> ignore
+                cont RequestProcessed
+                if Array.length mqueue > 0 then
+                    (snd mqueue.[0]) ()
